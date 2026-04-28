@@ -1,0 +1,185 @@
+:root {
+  color-scheme: light;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  line-height: 1.4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #fff9f2, #fff0f0);
+  color: #2f2929;
+}
+
+.app {
+  width: min(980px, 92vw);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  padding: 28px;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+#status {
+  margin: 8px 0 0;
+  color: #7f6e6e;
+}
+
+.match {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.food-card {
+  border: 2px solid #f4d6d6;
+  background: #fff9f9;
+  border-radius: 16px;
+  padding: 10px;
+  min-height: 270px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.food-card:hover,
+.food-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: #ff7c7c;
+  box-shadow: 0 10px 22px rgba(255, 124, 124, 0.2);
+}
+
+.food-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.food-name {
+  font-size: clamp(1.1rem, 2.8vw, 1.5rem);
+  font-weight: 800;
+}
+
+.vs {
+  align-self: center;
+  font-weight: 800;
+  color: #b56f6f;
+}
+
+.controls {
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
+}
+
+#restart {
+  border: 0;
+  border-radius: 999px;
+  background: #ff8f8f;
+  color: #fff;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.result {
+  margin-top: 24px;
+  text-align: center;
+  background: #fff4d8;
+  border: 2px dashed #f2c873;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.result p {
+  font-size: 1.6rem;
+  margin: 10px 0 14px;
+  font-weight: 800;
+}
+
+.champion-image {
+  width: min(380px, 100%);
+  border-radius: 14px;
+}
+
+.history {
+  margin-top: 26px;
+  padding: 16px;
+  border: 1px solid #f4d6d6;
+  border-radius: 14px;
+  background: #fffafa;
+}
+
+.history h2 {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.history-empty {
+  margin: 0;
+  color: #7f6e6e;
+}
+
+#history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-round {
+  border: 1px solid #f5e6e6;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+.history-round h3 {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: #7f6e6e;
+}
+
+.winner-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.winner-chip {
+  background: #ffe8e8;
+  color: #9a4f4f;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .match {
+    grid-template-columns: 1fr;
+  }
+
+  .vs {
+    text-align: center;
+  }
+}
