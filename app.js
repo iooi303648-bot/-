@@ -1,84 +1,20 @@
-const FOODS = [
-  {
-    name: "치킨",
-    image:
-      "https://images.unsplash.com/photo-1562967916-eb82221dfb92?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "피자",
-    image:
-      "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "떡볶이",
-    image:
-      "https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "라면",
-    image:
-      "https://images.unsplash.com/photo-1614563637806-1d0e645e0940?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "삼겹살",
-    image:
-      "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "족발",
-    image:
-      "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "초밥",
-    image:
-      "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "회",
-    image:
-      "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "햄버거",
-    image:
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "핫도그",
-    image:
-      "https://images.unsplash.com/photo-1612392062798-2e8f56f9e6f8?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "짜장면",
-    image:
-      "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "짬뽕",
-    image:
-      "https://images.unsplash.com/photo-1512058564366-c9e3e046a8a5?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "파스타",
-    image:
-      "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "리조또",
-    image:
-      "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "빙수",
-    image:
-      "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    name: "아이스크림",
-    image:
-      "https://images.unsplash.com/photo-1560008581-09826d1de69e?auto=format&fit=crop&w=1200&q=80",
-  },
+const FOOD_ITEMS = [
+  { name: "치킨", emoji: "🍗" },
+  { name: "피자", emoji: "🍕" },
+  { name: "떡볶이", emoji: "🌶️" },
+  { name: "라면", emoji: "🍜" },
+  { name: "삼겹살", emoji: "🥓" },
+  { name: "족발", emoji: "🍖" },
+  { name: "초밥", emoji: "🍣" },
+  { name: "회", emoji: "🐟" },
+  { name: "햄버거", emoji: "🍔" },
+  { name: "핫도그", emoji: "🌭" },
+  { name: "짜장면", emoji: "🥢" },
+  { name: "짬뽕", emoji: "🍲" },
+  { name: "파스타", emoji: "🍝" },
+  { name: "리조또", emoji: "🍚" },
+  { name: "빙수", emoji: "🍧" },
+  { name: "아이스크림", emoji: "🍨" },
 ];
 
 const statusElement = document.getElementById("status");
@@ -105,13 +41,31 @@ function shuffle(items) {
   return cloned;
 }
 
+function makeFoodImage(food) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffe8e8" />
+          <stop offset="100%" stop-color="#ffecc8" />
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="800" rx="40" fill="url(#bg)" />
+      <text x="600" y="360" text-anchor="middle" font-size="190">${food.emoji}</text>
+      <text x="600" y="540" text-anchor="middle" font-size="90" font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif" fill="#7a3f3f">${food.name}</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 function renderCard(button, food) {
   const imageElement = button.querySelector(".food-image");
   const nameElement = button.querySelector(".food-name");
 
-  imageElement.src = food.image;
+  imageElement.src = makeFoodImage(food);
   imageElement.alt = `${food.name} 이미지`;
-  nameElement.textContent = food.name;
+  nameElement.textContent = `${food.emoji} ${food.name}`;
 
   button.dataset.foodName = food.name;
 }
@@ -139,7 +93,7 @@ function renderHistory() {
     round.winners.forEach((food) => {
       const chip = document.createElement("span");
       chip.className = "winner-chip";
-      chip.textContent = food.name;
+      chip.textContent = `${food.emoji} ${food.name}`;
       winnersElement.append(chip);
     });
 
@@ -149,7 +103,7 @@ function renderHistory() {
 }
 
 function initTournament() {
-  currentRound = shuffle(FOODS);
+  currentRound = shuffle(FOOD_ITEMS);
   winners = [];
   roundSize = currentRound.length;
   matchIndex = 0;
@@ -206,8 +160,8 @@ function showChampion(champion) {
   statusElement.textContent = "우승 음식이 결정됐어요!";
   resultSection.innerHTML = `
     <h2>🏆 최종 우승</h2>
-    <p>${champion.name}</p>
-    <img src="${champion.image}" alt="${champion.name} 이미지" class="champion-image" />
+    <p>${champion.emoji} ${champion.name}</p>
+    <img src="${makeFoodImage(champion)}" alt="${champion.name} 이미지" class="champion-image" />
   `;
   resultSection.classList.remove("hidden");
 }
