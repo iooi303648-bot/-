@@ -18,16 +18,17 @@ body {
 }
 
 .app {
-  width: min(960px, 92vw);
+  width: min(980px, 92vw);
   background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
   padding: 28px;
 }
 
-h1 {
+h1,
+h2,
+h3 {
   margin: 0;
-  font-size: clamp(1.5rem, 3.5vw, 2rem);
 }
 
 #status {
@@ -47,12 +48,14 @@ h1 {
   border: 2px solid #f4d6d6;
   background: #fff9f9;
   border-radius: 16px;
-  font-size: clamp(1.1rem, 2.8vw, 1.6rem);
-  font-weight: 700;
-  padding: 24px 12px;
-  min-height: 200px;
+  padding: 10px;
+  min-height: 270px;
   cursor: pointer;
   transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .food-card:hover,
@@ -60,6 +63,18 @@ h1 {
   transform: translateY(-3px);
   border-color: #ff7c7c;
   box-shadow: 0 10px 22px rgba(255, 124, 124, 0.2);
+}
+
+.food-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.food-name {
+  font-size: clamp(1.1rem, 2.8vw, 1.5rem);
+  font-weight: 800;
 }
 
 .vs {
@@ -93,14 +108,66 @@ h1 {
   padding: 18px;
 }
 
-.result h2 {
-  margin: 0;
-}
-
 .result p {
   font-size: 1.6rem;
-  margin: 10px 0 0;
+  margin: 10px 0 14px;
   font-weight: 800;
+}
+
+.champion-image {
+  width: min(380px, 100%);
+  border-radius: 14px;
+}
+
+.history {
+  margin-top: 26px;
+  padding: 16px;
+  border: 1px solid #f4d6d6;
+  border-radius: 14px;
+  background: #fffafa;
+}
+
+.history h2 {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.history-empty {
+  margin: 0;
+  color: #7f6e6e;
+}
+
+#history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-round {
+  border: 1px solid #f5e6e6;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+.history-round h3 {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: #7f6e6e;
+}
+
+.winner-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.winner-chip {
+  background: #ffe8e8;
+  color: #9a4f4f;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .hidden {
