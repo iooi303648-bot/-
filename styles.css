@@ -1,0 +1,118 @@
+:root {
+  color-scheme: light;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  line-height: 1.4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #fff9f2, #fff0f0);
+  color: #2f2929;
+}
+
+.app {
+  width: min(960px, 92vw);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  padding: 28px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+#status {
+  margin: 8px 0 0;
+  color: #7f6e6e;
+}
+
+.match {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.food-card {
+  border: 2px solid #f4d6d6;
+  background: #fff9f9;
+  border-radius: 16px;
+  font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+  font-weight: 700;
+  padding: 24px 12px;
+  min-height: 200px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.food-card:hover,
+.food-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: #ff7c7c;
+  box-shadow: 0 10px 22px rgba(255, 124, 124, 0.2);
+}
+
+.vs {
+  align-self: center;
+  font-weight: 800;
+  color: #b56f6f;
+}
+
+.controls {
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
+}
+
+#restart {
+  border: 0;
+  border-radius: 999px;
+  background: #ff8f8f;
+  color: #fff;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.result {
+  margin-top: 24px;
+  text-align: center;
+  background: #fff4d8;
+  border: 2px dashed #f2c873;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.result h2 {
+  margin: 0;
+}
+
+.result p {
+  font-size: 1.6rem;
+  margin: 10px 0 0;
+  font-weight: 800;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .match {
+    grid-template-columns: 1fr;
+  }
+
+  .vs {
+    text-align: center;
+  }
+}
