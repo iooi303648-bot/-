@@ -1,4 +1,20 @@
 const FOOD_ITEMS = [
+  { name: "치킨", emoji: "🍗", image: "assets/chicken.svg" },
+  { name: "피자", emoji: "🍕", image: "assets/pizza.svg" },
+  { name: "떡볶이", emoji: "🌶️", image: "assets/tteokbokki.svg" },
+  { name: "라면", emoji: "🍜", image: "assets/ramen.svg" },
+  { name: "삼겹살", emoji: "🥓", image: "assets/samgyeopsal.svg" },
+  { name: "족발", emoji: "🍖", image: "assets/jokbal.svg" },
+  { name: "초밥", emoji: "🍣", image: "assets/sushi.svg" },
+  { name: "회", emoji: "🐟", image: "assets/hoe.svg" },
+  { name: "햄버거", emoji: "🍔", image: "assets/burger.svg" },
+  { name: "핫도그", emoji: "🌭", image: "assets/hotdog.svg" },
+  { name: "짜장면", emoji: "🥢", image: "assets/jjajang.svg" },
+  { name: "짬뽕", emoji: "🍲", image: "assets/jjamppong.svg" },
+  { name: "파스타", emoji: "🍝", image: "assets/pasta.svg" },
+  { name: "리조또", emoji: "🍚", image: "assets/risotto.svg" },
+  { name: "빙수", emoji: "🍧", image: "assets/bingsu.svg" },
+  { name: "아이스크림", emoji: "🍨", image: "assets/icecream.svg" },
   { name: "치킨", emoji: "🍗" },
   { name: "피자", emoji: "🍕" },
   { name: "떡볶이", emoji: "🌶️" },
@@ -126,6 +142,8 @@ function renderCard(button, food) {
   const imageElement = button.querySelector(".food-image");
   const nameElement = button.querySelector(".food-name");
 
+  imageElement.src = food.image;
+  imageElement.alt = `${food.name} 이미지`;
   imageElement.src = makeFoodImage(food);
   imageElement.alt = `${food.name} 이미지`;
   imageElement.onerror = () => {
@@ -227,6 +245,7 @@ function showChampion(champion) {
   resultSection.innerHTML = `
     <h2>🏆 최종 우승</h2>
     <p>${champion.emoji} ${champion.name}</p>
+    <img src="${champion.image}" alt="${champion.name} 이미지" class="champion-image" />
     <img src="${makeFoodImage(champion)}" alt="${champion.name} 이미지" class="champion-image" />
   `;
   resultSection.classList.remove("hidden");
