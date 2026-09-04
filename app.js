@@ -165,6 +165,7 @@ function generateWorld() {
   for (let attempt = 0; attempt < 400 && treeCount < maxTrees; attempt += 1) {
     const x = Math.floor(Math.random() * (HALF * 2 - 6)) - (HALF - 3);
     const z = Math.floor(Math.random() * (HALF * 2 - 6)) - (HALF - 3);
+    if (Math.abs(x) <= 4 && Math.abs(z) <= 4) continue; // 스폰 지점 주변엔 나무 안 심음
     const height = terrainHeight(x, z);
     if (height <= 3) continue; // 모래밭엔 나무 안 심음
     if (world.get(key(x, height - 1, z)) !== "grass") continue;
