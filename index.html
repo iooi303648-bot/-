@@ -3,41 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>음식 이상형 월드컵</title>
+    <title>블록 월드 - 마인크래프트 스타일 게임</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app">
-      <header>
-        <h1>🍽️ 음식 이상형 월드컵</h1>
-        <p id="status">16강 1 / 8</p>
-      </header>
+    <canvas id="game-canvas"></canvas>
 
-      <section class="match" id="match">
-        <button class="food-card" id="left-card" aria-label="왼쪽 음식 선택">
-          <img class="food-image" src="" alt="" />
-          <span class="food-name"></span>
-        </button>
-        <span class="vs">VS</span>
-        <button class="food-card" id="right-card" aria-label="오른쪽 음식 선택">
-          <img class="food-image" src="" alt="" />
-          <span class="food-name"></span>
-        </button>
-      </section>
+    <div id="crosshair"></div>
 
-      <section class="controls">
-        <button id="restart">처음부터 다시하기</button>
-      </section>
+    <div id="hotbar"></div>
 
-      <section class="result hidden" id="result"></section>
+    <div id="hud">
+      <div id="pos-display"></div>
+    </div>
 
-      <section class="history" id="history">
-        <h2>📚 라운드별 승자 기록</h2>
-        <p class="history-empty" id="history-empty">아직 완료된 라운드가 없어요.</p>
-        <div id="history-list"></div>
-      </section>
-    </main>
+    <div id="overlay">
+      <div class="panel">
+        <h1>⛏️ 블록 월드</h1>
+        <p class="subtitle">Three.js로 만든 마인크래프트 스타일 미니 게임</p>
+        <ul class="controls-list">
+          <li><b>WASD</b> 이동</li>
+          <li><b>마우스</b> 시점 회전</li>
+          <li><b>Space</b> 점프</li>
+          <li><b>Shift</b> 달리기</li>
+          <li><b>좌클릭</b> 블록 부수기</li>
+          <li><b>우클릭</b> 블록 놓기</li>
+          <li><b>1~6 / 휠</b> 블록 선택</li>
+          <li><b>Esc</b> 일시정지</li>
+        </ul>
+        <button id="start-button">클릭해서 시작하기</button>
+      </div>
+    </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
