@@ -231,9 +231,9 @@ function answer(i) {
   $("feedback").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function artCardHtml(art, emphasis) {
+function artCardHtml(art, emphasis, big = false) {
   return `
-    <div class="art-card">
+    <div class="art-card ${big ? "big" : ""}">
       <img src="${art.image}" alt="${escapeHtml(art.title)}" />
       <div class="art-info">
         <h3>${escapeHtml(art.title)}</h3>
@@ -296,8 +296,9 @@ function renderGallery() {
 function openArt(id) {
   const art = ARTWORKS.find((a) => a.id === id);
   if (!art) return;
-  $("dialog-body").innerHTML = artCardHtml(art, "story");
+  $("dialog-body").innerHTML = artCardHtml(art, "story", true);
   $("art-dialog").showModal();
+  $("art-dialog").scrollTop = 0;
 }
 
 /* ---------- 이벤트 ---------- */
