@@ -1,5 +1,4 @@
 const MODES = [
-  { id: "mix", icon: "🎨", name: "종합 퀴즈", desc: "여러 유형이 섞인 10문제" },
   { id: "title", icon: "🖼️", name: "작품명 맞히기", desc: "그림을 보고 제목 고르기" },
   { id: "artist", icon: "👩‍🎨", name: "화가 맞히기", desc: "누가 그렸을까?" },
   { id: "concept", icon: "💡", name: "미술 개념", desc: "그림에 담긴 미술 개념 찾기" },
@@ -125,12 +124,13 @@ function buildQuestions(mode) {
 function renderHome() {
   $("mode-grid").innerHTML = MODES.map(
     (m) => `
-      <button class="mode-card ${m.id === "mix" ? "featured" : ""}" data-mode="${m.id}">
+      <button class="mode-card" data-mode="${m.id}">
         <span class="mode-icon">${m.icon}</span>
         <span class="mode-name">${m.name}</span>
         <span class="mode-desc">${m.desc}</span>
       </button>`
   ).join("");
+  $("cta-thumbs").innerHTML = ARTWORKS.map((a) => `<img src="${a.image}" alt="" />`).join("");
 }
 
 function startQuiz(mode) {
@@ -302,7 +302,7 @@ function openArt(id) {
 }
 
 /* ---------- 이벤트 ---------- */
-$("mode-grid").addEventListener("click", (e) => {
+$("home").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-mode]");
   if (btn) startQuiz(btn.dataset.mode);
 });

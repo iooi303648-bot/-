@@ -16,9 +16,24 @@
       <h1>명화 퀴즈</h1>
       <p class="lead">명화 9점, 얼마나 기억하고 있나요?</p>
 
-      <div class="mode-grid" id="mode-grid"></div>
+      <button class="gallery-cta" id="open-gallery">
+        <span class="cta-text">
+          <span class="cta-title">🖼️ 명화 도감</span>
+          <span class="cta-desc">퀴즈 전에 명화 9점을 먼저 살펴봐요</span>
+        </span>
+        <span class="cta-thumbs" id="cta-thumbs"></span>
+      </button>
 
-      <button class="link-btn" id="open-gallery">🖼️ 명화 도감 먼저 보기</button>
+      <h2 class="home-sub">게임 고르기</h2>
+      <div class="mode-row" id="mode-grid"></div>
+
+      <button class="mix-card" data-mode="mix">
+        <span class="mode-icon">🎨</span>
+        <span class="mix-text">
+          <span class="mode-name">종합 퀴즈</span>
+          <span class="mode-desc">모든 유형이 섞인 10문제에 도전해요</span>
+        </span>
+      </button>
     </section>
 
     <!-- 퀴즈 화면 -->
