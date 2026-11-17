@@ -1,43 +1,79 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>음식 이상형 월드컵</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="app">
-      <header>
-        <h1>🍽️ 음식 이상형 월드컵</h1>
-        <p id="status">16강 1 / 8</p>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>명화 퀴즈</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <!-- 시작 화면 -->
+    <section class="screen" id="home">
+      <p class="eyebrow">가을 담은 명화 · 원작 만나기</p>
+      <h1>명화 퀴즈</h1>
+      <p class="lead">명화 9점, 얼마나 기억하고 있나요?</p>
 
-      <section class="match" id="match">
-        <button class="food-card" id="left-card" aria-label="왼쪽 음식 선택">
-          <img class="food-image" src="" alt="" />
-          <span class="food-name"></span>
-        </button>
-        <span class="vs">VS</span>
-        <button class="food-card" id="right-card" aria-label="오른쪽 음식 선택">
-          <img class="food-image" src="" alt="" />
-          <span class="food-name"></span>
-        </button>
-      </section>
+      <div class="mode-grid" id="mode-grid"></div>
 
-      <section class="controls">
-        <button id="restart">처음부터 다시하기</button>
-      </section>
+      <button class="link-btn" id="open-gallery">🖼️ 명화 도감 먼저 보기</button>
+    </section>
 
-      <section class="result hidden" id="result"></section>
+    <!-- 퀴즈 화면 -->
+    <section class="screen hidden" id="quiz">
+      <div class="quiz-top">
+        <button class="ghost-btn" id="quit">← 처음으로</button>
+        <span class="counter" id="counter">1 / 10</span>
+        <span class="score-pill" id="score-pill">⭐ 0</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
 
-      <section class="history" id="history">
-        <h2>📚 라운드별 승자 기록</h2>
-        <p class="history-empty" id="history-empty">아직 완료된 라운드가 없어요.</p>
-        <div id="history-list"></div>
-      </section>
-    </main>
+      <p class="q-type" id="q-type"></p>
+      <h2 class="q-text" id="q-text"></h2>
+      <div class="q-visual" id="q-visual"></div>
+      <div class="choices" id="choices"></div>
 
-    <script src="app.js"></script>
-  </body>
+      <div class="feedback hidden" id="feedback">
+        <p class="fb-title" id="fb-title"></p>
+        <div class="fb-card" id="fb-card"></div>
+        <button class="primary-btn" id="next">다음 문제 →</button>
+      </div>
+    </section>
+
+    <!-- 결과 화면 -->
+    <section class="screen hidden" id="result">
+      <p class="eyebrow">퀴즈 끝!</p>
+      <div class="stars" id="stars"></div>
+      <h2 class="result-score" id="result-score"></h2>
+      <p class="lead" id="result-msg"></p>
+      <div class="review" id="review"></div>
+      <div class="result-actions">
+        <button class="primary-btn" id="retry">한 번 더 하기</button>
+        <button class="ghost-btn" id="home-btn">다른 퀴즈 고르기</button>
+      </div>
+    </section>
+
+    <!-- 도감 화면 -->
+    <section class="screen hidden" id="gallery">
+      <div class="quiz-top">
+        <button class="ghost-btn" id="gallery-back">← 처음으로</button>
+      </div>
+      <h2 class="section-title">명화 도감</h2>
+      <p class="lead">그림을 누르면 작품 이야기를 볼 수 있어요.</p>
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </section>
+
+    <footer class="credit">원작 이미지: Wikimedia Commons / PD-Art, NGA Open Access / CC0</footer>
+  </main>
+
+  <dialog class="art-dialog" id="art-dialog">
+    <div id="dialog-body"></div>
+    <form method="dialog"><button class="primary-btn">닫기</button></form>
+  </dialog>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
 </html>

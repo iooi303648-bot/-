@@ -1,317 +1,331 @@
-const FOOD_ITEMS = [
-  { name: "치킨", emoji: "🍗", image: "assets/chicken.svg" },
-  { name: "피자", emoji: "🍕", image: "assets/pizza.svg" },
-  { name: "떡볶이", emoji: "🌶️", image: "assets/tteokbokki.svg" },
-  { name: "라면", emoji: "🍜", image: "assets/ramen.svg" },
-  { name: "삼겹살", emoji: "🥓", image: "assets/samgyeopsal.svg" },
-  { name: "족발", emoji: "🍖", image: "assets/jokbal.svg" },
-  { name: "초밥", emoji: "🍣", image: "assets/sushi.svg" },
-  { name: "회", emoji: "🐟", image: "assets/hoe.svg" },
-  { name: "햄버거", emoji: "🍔", image: "assets/burger.svg" },
-  { name: "핫도그", emoji: "🌭", image: "assets/hotdog.svg" },
-  { name: "짜장면", emoji: "🥢", image: "assets/jjajang.svg" },
-  { name: "짬뽕", emoji: "🍲", image: "assets/jjamppong.svg" },
-  { name: "파스타", emoji: "🍝", image: "assets/pasta.svg" },
-  { name: "리조또", emoji: "🍚", image: "assets/risotto.svg" },
-  { name: "빙수", emoji: "🍧", image: "assets/bingsu.svg" },
-  { name: "아이스크림", emoji: "🍨", image: "assets/icecream.svg" },
-  { name: "치킨", emoji: "🍗" },
-  { name: "피자", emoji: "🍕" },
-  { name: "떡볶이", emoji: "🌶️" },
-  { name: "라면", emoji: "🍜" },
-  { name: "삼겹살", emoji: "🥓" },
-  { name: "족발", emoji: "🍖" },
-  { name: "초밥", emoji: "🍣" },
-  { name: "회", emoji: "🐟" },
-  { name: "햄버거", emoji: "🍔" },
-  { name: "핫도그", emoji: "🌭" },
-  { name: "짜장면", emoji: "🥢" },
-  { name: "짬뽕", emoji: "🍲" },
-  { name: "파스타", emoji: "🍝" },
-  { name: "리조또", emoji: "🍚" },
-  { name: "빙수", emoji: "🍧" },
-  { name: "아이스크림", emoji: "🍨" },
-# 새 작업 폴더 만들기
-mkdir food-worldcup-clean
-cd food-worldcup-clean
-
-# 파일 3개 만들기
-cat > index.html <<'EOF'
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>음식 이상형 월드컵</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <main class="app">
-    <header>
-      <h1>🍽️ 음식 이상형 월드컵</h1>
-      <p id="status">16강 1 / 8</p>
-    </header>
-
-    <section class="match" id="match">
-      <button class="food-card" id="left-card">
-        <img class="food-image" src="" alt="" />
-        <span class="food-name"></span>
-      </button>
-      <span class="vs">VS</span>
-      <button class="food-card" id="right-card">
-        <img class="food-image" src="" alt="" />
-        <span class="food-name"></span>
-      </button>
-    </section>
-
-    <section class="controls">
-      <button id="restart">처음부터 다시하기</button>
-    </section>
-
-    <section class="result hidden" id="result"></section>
-
-    <section class="history">
-      <h2>📚 라운드별 승자 기록</h2>
-      <p id="history-empty">아직 완료된 라운드가 없어요.</p>
-      <div id="history-list"></div>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
-</body>
-</html>
-EOF
-
-cat > styles.css <<'EOF'
-body { margin:0; font-family:sans-serif; background:#fff5f5; }
-.app { max-width:900px; margin:20px auto; background:#fff; padding:20px; border-radius:14px; }
-.match { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; }
-.food-card { border:1px solid #f4caca; border-radius:12px; padding:10px; background:#fff; cursor:pointer; }
-.food-image { width:100%; height:180px; object-fit:cover; border-radius:10px; }
-.food-name { display:block; font-weight:700; margin-top:8px; }
-.controls { margin-top:14px; }
-.result { margin-top:14px; padding:12px; border:1px dashed #f0b96c; border-radius:10px; background:#fff7e6; }
-.history { margin-top:16px; padding:12px; border:1px solid #f4dede; border-radius:10px; background:#fffafa; }
-.hidden { display:none; }
-@media (max-width:700px){ .match { grid-template-columns:1fr; } .vs{text-align:center;} }
-EOF
-
-cat > app.js <<'EOF'
-const FOOD_ITEMS = [
-  { name: "치킨", emoji: "🍗" }, { name: "피자", emoji: "🍕" },
-  { name: "떡볶이", emoji: "🌶️" }, { name: "라면", emoji: "🍜" },
-  { name: "삼겹살", emoji: "🥓" }, { name: "족발", emoji: "🍖" },
-  { name: "초밥", emoji: "🍣" }, { name: "회", emoji: "🐟" },
-  { name: "햄버거", emoji: "🍔" }, { name: "핫도그", emoji: "🌭" },
-  { name: "짜장면", emoji: "🥢" }, { name: "짬뽕", emoji: "🍲" },
-  { name: "파스타", emoji: "🍝" }, { name: "리조또", emoji: "🍚" },
-  { name: "빙수", emoji: "🍧" }, { name: "아이스크림", emoji: "🍨" },
+const MODES = [
+  { id: "mix", icon: "🎨", name: "종합 퀴즈", desc: "여러 유형이 섞인 10문제" },
+  { id: "title", icon: "🖼️", name: "작품명 맞히기", desc: "그림을 보고 제목 고르기" },
+  { id: "artist", icon: "👩‍🎨", name: "화가 맞히기", desc: "누가 그렸을까?" },
+  { id: "concept", icon: "💡", name: "미술 개념", desc: "그림에 담긴 미술 개념 찾기" },
+  { id: "zoom", icon: "🔍", name: "확대 그림 퀴즈", desc: "그림 일부만 보고 맞히기" },
+  { id: "story", icon: "📖", name: "이야기로 찾기", desc: "작품 이야기 읽고 그림 고르기" },
 ];
 
-const statusElement = document.getElementById("status");
-const leftCard = document.getElementById("left-card");
-const rightCard = document.getElementById("right-card");
-const resultSection = document.getElementById("result");
-const restartButton = document.getElementById("restart");
-const matchSection = document.getElementById("match");
-const historyList = document.getElementById("history-list");
-const historyEmpty = document.getElementById("history-empty");
+const TYPE_LABEL = {
+  title: "작품명 맞히기",
+  artist: "화가 맞히기",
+  concept: "미술 개념",
+  zoom: "확대 그림 퀴즈",
+  story: "이야기로 찾기",
+  oldest: "시대 퀴즈",
+};
 
-let currentRound = [];
-let winners = [];
-let roundSize = 16;
-let matchIndex = 0;
-let roundHistory = [];
+const $ = (id) => document.getElementById(id);
 
-function shuffle(items) {
-  const cloned = [...items];
-  for (let i = cloned.length - 1; i > 0; i -= 1) {
+const state = {
+  mode: "mix",
+  questions: [],
+  index: 0,
+  score: 0,
+  streak: 0,
+  wrong: [],
+  answered: false,
+};
+
+/* ---------- 유틸 ---------- */
+function shuffle(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return cloned;
+  return a;
 }
 
-function makeFoodImage(food) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffe8e8" /><stop offset="100%" stop-color="#ffecc8" /></linearGradient></defs><rect width="1200" height="800" rx="40" fill="url(#bg)" /><text x="600" y="360" text-anchor="middle" font-size="190">${food.emoji}</text><text x="600" y="540" text-anchor="middle" font-size="90" font-family="sans-serif" fill="#7a3f3f">${food.name}</text></svg>`;
-  const encoded = window.btoa(unescape(encodeURIComponent(svg)));
-  return `data:image/svg+xml;base64,${encoded}`;
+function pickOthers(answer, count) {
+  return shuffle(ARTWORKS.filter((a) => a.id !== answer.id)).slice(0, count);
 }
 
-function renderCard(button, food) {
-  const imageElement = button.querySelector(".food-image");
-  const nameElement = button.querySelector(".food-name");
-
-  imageElement.src = food.image;
-  imageElement.alt = `${food.name} 이미지`;
-  imageElement.src = makeFoodImage(food);
-  imageElement.alt = `${food.name} 이미지`;
-  imageElement.onerror = () => {
-    imageElement.src = "https://dummyimage.com/1200x800/ffe8e8/7a3f3f.png&text=" + encodeURIComponent(food.name);
-  };
-  nameElement.textContent = `${food.emoji} ${food.name}`;
-
-  button.dataset.foodName = food.name;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function renderHistory() {
-  historyList.innerHTML = "";
-
-  if (roundHistory.length === 0) {
-    historyEmpty.classList.remove("hidden");
-    return;
-  }
-
-  historyEmpty.classList.add("hidden");
-
-  roundHistory.forEach((round) => {
-    const roundItem = document.createElement("article");
-    roundItem.className = "history-round";
-
-    const title = document.createElement("h3");
-    title.textContent = `${round.label} 승자`;
-
-    const winnersElement = document.createElement("div");
-    winnersElement.className = "winner-chips";
-
-    round.winners.forEach((food) => {
-      const chip = document.createElement("span");
-      chip.className = "winner-chip";
-      chip.textContent = `${food.emoji} ${food.name}`;
-      winnersElement.append(chip);
-    });
-
-    roundItem.append(title, winnersElement);
-    historyList.append(roundItem);
-  });
+function show(screenId) {
+  document.querySelectorAll(".screen").forEach((el) => el.classList.add("hidden"));
+  $(screenId).classList.remove("hidden");
+  window.scrollTo({ top: 0 });
 }
 
-function initTournament() {
-  currentRound = shuffle(FOOD_ITEMS);
-  winners = [];
-  roundSize = currentRound.length;
-  matchIndex = 0;
-  roundHistory = [];
-  resultSection.classList.add("hidden");
-  matchSection.classList.remove("hidden");
-  renderHistory();
-  renderMatch();
-}
-
-function renderMatch() {
-  const left = currentRound[matchIndex * 2];
-  const right = currentRound[matchIndex * 2 + 1];
-
-  renderCard(leftCard, left);
-  renderCard(rightCard, right);
-  statusElement.textContent = `${roundSize}강 ${matchIndex + 1} / ${roundSize / 2}`;
-}
-
-function choose(foodName) {
-  const winner = currentRound.find((food) => food.name === foodName);
-
-  if (!winner) {
-    return;
+/* ---------- 문제 만들기 ---------- */
+function makeQuestion(type, art) {
+  if (type === "title" || type === "artist" || type === "concept") {
+    const key = type;
+    const prompt = {
+      title: "이 그림의 제목은 무엇일까요?",
+      artist: "이 그림을 그린 화가는 누구일까요?",
+      concept: "이 그림과 가장 관련 있는 미술 개념은?",
+    }[type];
+    const options = shuffle([art, ...pickOthers(art, 3)]).map((a) => ({
+      text: a[key],
+      correct: a.id === art.id,
+    }));
+    return { type, art, prompt, visual: { kind: "image", art }, options };
   }
 
-  winners.push(winner);
-  matchIndex += 1;
+  if (type === "zoom") {
+    const options = shuffle([art, ...pickOthers(art, 3)]).map((a) => ({
+      text: a.title,
+      correct: a.id === art.id,
+    }));
+    return {
+      type,
+      art,
+      prompt: "그림의 한 부분을 크게 확대했어요. 어떤 작품일까요?",
+      visual: { kind: "zoom", art },
+      options,
+    };
+  }
 
-  if (matchIndex >= currentRound.length / 2) {
-    roundHistory.push({
-      label: `${roundSize}강`,
-      winners: [...winners],
-    });
+  if (type === "story") {
+    const options = shuffle([art, ...pickOthers(art, 3)]).map((a) => ({
+      art: a,
+      correct: a.id === art.id,
+    }));
+    return {
+      type,
+      art,
+      prompt: "이 이야기에 어울리는 그림을 골라 보세요.",
+      visual: { kind: "story", text: art.story },
+      options,
+    };
+  }
 
-    if (winners.length === 1) {
-      renderHistory();
-      showChampion(winners[0]);
-      return;
+  if (type === "oldest") {
+    const four = shuffle(ARTWORKS).slice(0, 4);
+    const oldest = four.reduce((m, a) => (a.yearNum < m.yearNum ? a : m));
+    return {
+      type,
+      art: oldest,
+      prompt: "이 중에서 가장 오래전에 그려진 그림은?",
+      visual: { kind: "none" },
+      options: four.map((a) => ({ art: a, correct: a.id === oldest.id })),
+      showYears: true,
+    };
+  }
+}
+
+function buildQuestions(mode) {
+  if (mode === "mix") {
+    const types = ["title", "artist", "concept", "zoom", "story"];
+    const arts = shuffle(ARTWORKS);
+    const list = arts.map((art, i) => makeQuestion(types[i % types.length], art));
+    list.push(makeQuestion("oldest"));
+    return shuffle(list);
+  }
+  return shuffle(ARTWORKS).map((art) => makeQuestion(mode, art));
+}
+
+/* ---------- 화면 그리기 ---------- */
+function renderHome() {
+  $("mode-grid").innerHTML = MODES.map(
+    (m) => `
+      <button class="mode-card ${m.id === "mix" ? "featured" : ""}" data-mode="${m.id}">
+        <span class="mode-icon">${m.icon}</span>
+        <span class="mode-name">${m.name}</span>
+        <span class="mode-desc">${m.desc}</span>
+      </button>`
+  ).join("");
+}
+
+function startQuiz(mode) {
+  state.mode = mode;
+  state.questions = buildQuestions(mode);
+  state.index = 0;
+  state.score = 0;
+  state.streak = 0;
+  state.wrong = [];
+  const bar = $("progress-bar");
+  bar.style.transition = "none";
+  bar.style.width = "0";
+  bar.offsetWidth;
+  bar.style.transition = "";
+  show("quiz");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = state.questions[state.index];
+  const total = state.questions.length;
+  state.answered = false;
+
+  $("counter").textContent = `${state.index + 1} / ${total}`;
+  $("score-pill").textContent = `⭐ ${state.score}`;
+  $("progress-bar").style.width = `${(state.index / total) * 100}%`;
+  $("q-type").textContent = TYPE_LABEL[q.type];
+  $("q-text").textContent = q.prompt;
+  $("feedback").classList.add("hidden");
+
+  const v = q.visual;
+  const visual = $("q-visual");
+  visual.className = "q-visual";
+  if (v.kind === "image") {
+    visual.innerHTML = `<img class="q-image" src="${v.art.image}" alt="문제 그림" />`;
+  } else if (v.kind === "zoom") {
+    visual.classList.add("zoom-wrap");
+    visual.innerHTML = `
+      <div class="zoom-box" style="background-image:url('${v.art.image}');background-position:${v.art.focus[0]}% ${v.art.focus[1]}%"></div>
+      <img class="zoom-full" src="${v.art.image}" alt="" />`;
+  } else if (v.kind === "story") {
+    visual.innerHTML = `<blockquote class="story-box">“${escapeHtml(v.text)}”</blockquote>`;
+  } else {
+    visual.innerHTML = "";
+  }
+
+  const choices = $("choices");
+  const isImage = q.options[0].art !== undefined;
+  choices.className = `choices ${isImage ? "image-choices" : ""}`;
+  choices.innerHTML = q.options
+    .map((o, i) =>
+      isImage
+        ? `<button class="choice img-choice" data-i="${i}">
+             <img src="${o.art.image}" alt="보기 ${i + 1}" />
+             <span class="choice-num">${i + 1}</span>
+           </button>`
+        : `<button class="choice" data-i="${i}"><span class="choice-num">${i + 1}</span>${escapeHtml(o.text)}</button>`
+    )
+    .join("");
+}
+
+function answer(i) {
+  if (state.answered) return;
+  state.answered = true;
+  const q = state.questions[state.index];
+  const picked = q.options[i];
+  const buttons = [...$("choices").children];
+
+  buttons.forEach((b, idx) => {
+    b.disabled = true;
+    if (q.options[idx].correct) b.classList.add("correct");
+    else if (idx === i) b.classList.add("wrong");
+    if (q.showYears) {
+      const a = q.options[idx].art;
+      b.insertAdjacentHTML("beforeend", `<span class="year-tag">${a.year}</span>`);
     }
-
-    currentRound = winners;
-    winners = [];
-    roundSize = currentRound.length;
-    matchIndex = 0;
-    renderHistory();
-  }
-
-  renderMatch();
-}
-
-function showChampion(champion) {
-  matchSection.classList.add("hidden");
-  statusElement.textContent = "우승 음식이 결정됐어요!";
-  resultSection.innerHTML = `
-    <h2>🏆 최종 우승</h2>
-    <p>${champion.emoji} ${champion.name}</p>
-    <img src="${champion.image}" alt="${champion.name} 이미지" class="champion-image" />
-    <img src="${makeFoodImage(champion)}" alt="${champion.name} 이미지" class="champion-image" />
-  `;
-  resultSection.classList.remove("hidden");
-}
-
-leftCard.addEventListener("click", () => {
-  choose(leftCard.dataset.foodName);
-});
-
-rightCard.addEventListener("click", () => {
-  choose(rightCard.dataset.foodName);
-});
-
-restartButton.addEventListener("click", initTournament);
-
-initTournament();
-function shuffle(items){ const a=[...items]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function makeImg(food){
-  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='100%' height='100%' fill='#ffe9d5'/><text x='50%' y='45%' text-anchor='middle' font-size='180'>${food.emoji}</text><text x='50%' y='65%' text-anchor='middle' font-size='80'>${food.name}</text></svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-function renderCard(btn, food){
-  btn.querySelector(".food-image").src = makeImg(food);
-  btn.querySelector(".food-image").alt = `${food.name} 이미지`;
-  btn.querySelector(".food-name").textContent = `${food.emoji} ${food.name}`;
-  btn.dataset.foodName = food.name;
-}
-function renderHistory(){
-  historyList.innerHTML="";
-  if(roundHistory.length===0){ historyEmpty.style.display="block"; return; }
-  historyEmpty.style.display="none";
-  roundHistory.forEach(r=>{
-    const box=document.createElement("div");
-    box.innerHTML=`<strong>${r.label} 승자</strong><div>${r.winners.map(w=>`<span style="margin-right:8px">${w.emoji} ${w.name}</span>`).join("")}</div>`;
-    historyList.appendChild(box);
   });
-}
-function renderMatch(){
-  const left=currentRound[matchIndex*2];
-  const right=currentRound[matchIndex*2+1];
-  renderCard(leftCard,left); renderCard(rightCard,right);
-  statusElement.textContent=`${roundSize}강 ${matchIndex+1} / ${roundSize/2}`;
-}
-function showChampion(c){
-  matchSection.classList.add("hidden");
-  statusElement.textContent="우승 음식이 결정됐어요!";
-  resultSection.innerHTML=`<h2>🏆 최종 우승</h2><p>${c.emoji} ${c.name}</p><img src="${makeImg(c)}" style="max-width:100%;border-radius:10px" />`;
-  resultSection.classList.remove("hidden");
-}
-function initTournament(){
-  currentRound=shuffle(FOOD_ITEMS); winners=[]; roundSize=currentRound.length; matchIndex=0; roundHistory=[];
-  resultSection.classList.add("hidden"); matchSection.classList.remove("hidden");
-  renderHistory(); renderMatch();
-}
-function choose(name){
-  const w=currentRound.find(f=>f.name===name); if(!w) return;
-  winners.push(w); matchIndex++;
-  if(matchIndex>=currentRound.length/2){
-    roundHistory.push({label:`${roundSize}강`, winners:[...winners]});
-    if(winners.length===1){ renderHistory(); showChampion(winners[0]); return; }
-    currentRound=winners; winners=[]; roundSize=currentRound.length; matchIndex=0; renderHistory();
+
+  if (picked.correct) {
+    state.score++;
+    state.streak++;
+  } else {
+    state.streak = 0;
+    state.wrong.push(q);
   }
-  renderMatch();
+
+  if (q.visual.kind === "zoom") $("q-visual").classList.add("revealed");
+  $("score-pill").textContent = `⭐ ${state.score}`;
+
+  const cheers = ["정답이에요! 🎉", "딩동댕! 👏", "훌륭해요! ✨", "맞았어요! 🌟"];
+  let title = picked.correct ? cheers[Math.floor(Math.random() * cheers.length)] : "아쉬워요! 정답을 확인해 봐요 🙂";
+  if (picked.correct && state.streak >= 3) title += ` ${state.streak}연속 정답!`;
+  $("fb-title").textContent = title;
+  $("fb-title").className = `fb-title ${picked.correct ? "ok" : "no"}`;
+  $("fb-card").innerHTML = artCardHtml(q.art, q.type === "concept" ? "concept" : "story");
+  $("next").textContent = state.index + 1 < state.questions.length ? "다음 문제 →" : "결과 보기 →";
+  $("feedback").classList.remove("hidden");
+  $("feedback").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
-leftCard.onclick=()=>choose(leftCard.dataset.foodName);
-rightCard.onclick=()=>choose(rightCard.dataset.foodName);
-restartButton.onclick=initTournament;
-initTournament();
-EOF
+
+function artCardHtml(art, emphasis) {
+  return `
+    <div class="art-card">
+      <img src="${art.image}" alt="${escapeHtml(art.title)}" />
+      <div class="art-info">
+        <h3>${escapeHtml(art.title)}</h3>
+        <p class="meta">${escapeHtml(art.artist)} · ${escapeHtml(art.year)} · 소장: ${escapeHtml(art.museum)}</p>
+        <p class="label">작품 이야기</p>
+        <p>${escapeHtml(art.story)}</p>
+        <div class="concept-box ${emphasis === "concept" ? "emph" : ""}">
+          <span class="concept-tag">미술 개념</span> <strong>${escapeHtml(art.concept)}</strong>
+          <p>${escapeHtml(art.conceptText)}</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+function next() {
+  state.index++;
+  if (state.index < state.questions.length) renderQuestion();
+  else renderResult();
+}
+
+function renderResult() {
+  const total = state.questions.length;
+  const ratio = state.score / total;
+  const stars = ratio === 1 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0;
+  $("stars").innerHTML = [0, 1, 2].map((i) => `<span class="${i < stars ? "on" : ""}">★</span>`).join("");
+  $("result-score").textContent = `${total}문제 중 ${state.score}개 정답`;
+  $("result-msg").textContent =
+    ratio === 1 ? "완벽해요! 명화 박사 인정! 🏆"
+    : ratio >= 0.7 ? "아주 잘했어요! 조금만 더 하면 만점이에요."
+    : ratio >= 0.4 ? "좋아요! 틀린 그림을 다시 살펴볼까요?"
+    : "괜찮아요! 도감에서 그림을 한 번 더 보고 도전해요.";
+
+  if (state.wrong.length) {
+    const seen = new Set();
+    const arts = state.wrong.map((q) => q.art).filter((a) => !seen.has(a.id) && seen.add(a.id));
+    $("review").innerHTML = `
+      <h3 class="review-title">다시 보면 좋은 그림</h3>
+      <div class="review-list">
+        ${arts.map((a) => `<button class="review-item" data-art="${a.id}"><img src="${a.image}" alt="" /><span>${escapeHtml(a.title)}</span></button>`).join("")}
+      </div>`;
+  } else {
+    $("review").innerHTML = "";
+  }
+  $("progress-bar").style.width = "100%";
+  show("result");
+}
+
+function renderGallery() {
+  $("gallery-grid").innerHTML = ARTWORKS.map(
+    (a) => `
+      <button class="gallery-item" data-art="${a.id}">
+        <img src="${a.image}" alt="${escapeHtml(a.title)}" loading="lazy" />
+        <span class="g-title">${escapeHtml(a.title)}</span>
+        <span class="g-artist">${escapeHtml(a.artist)}</span>
+      </button>`
+  ).join("");
+  show("gallery");
+}
+
+function openArt(id) {
+  const art = ARTWORKS.find((a) => a.id === id);
+  if (!art) return;
+  $("dialog-body").innerHTML = artCardHtml(art, "story");
+  $("art-dialog").showModal();
+}
+
+/* ---------- 이벤트 ---------- */
+$("mode-grid").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-mode]");
+  if (btn) startQuiz(btn.dataset.mode);
+});
+$("choices").addEventListener("click", (e) => {
+  const btn = e.target.closest(".choice");
+  if (btn) answer(Number(btn.dataset.i));
+});
+document.addEventListener("keydown", (e) => {
+  if ($("quiz").classList.contains("hidden")) return;
+  if (!state.answered && ["1", "2", "3", "4"].includes(e.key)) answer(Number(e.key) - 1);
+  else if (state.answered && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); next(); }
+});
+$("next").addEventListener("click", next);
+$("quit").addEventListener("click", () => show("home"));
+$("retry").addEventListener("click", () => startQuiz(state.mode));
+$("home-btn").addEventListener("click", () => show("home"));
+$("open-gallery").addEventListener("click", renderGallery);
+$("gallery-back").addEventListener("click", () => show("home"));
+document.addEventListener("click", (e) => {
+  const item = e.target.closest("[data-art]");
+  if (item) openArt(item.dataset.art);
+});
+$("art-dialog").addEventListener("click", (e) => {
+  if (e.target === $("art-dialog")) $("art-dialog").close();
+});
+
+renderHome();
