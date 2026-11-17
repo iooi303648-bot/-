@@ -338,6 +338,28 @@ h1 { font-size: clamp(2.6rem, 9vw, 4rem); margin: 12px 0 4px; }
 .art-card.big .art-info h3 { font-size: 1.9rem; }
 .art-card.big .art-info p { font-size: 1.05rem; }
 
+.name-form { max-width: 440px; margin: 32px auto 0; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.name-form .section-title, .name-form .lead { margin: 0; }
+.name-input {
+  width: 100%;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 1.3rem;
+  text-align: center;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+}
+.name-input:focus { outline: none; border-color: var(--accent); }
+.name-error { margin: 0; color: var(--red); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.player-line { margin: 4px 0 0; font-family: "Jua", sans-serif; font-size: 1.3rem; }
+.send-status { display: inline-block; margin: 0 0 16px; padding: 8px 16px; border-radius: 999px; background: var(--line); color: var(--ink); }
+.send-status.ok { background: var(--green-soft); color: var(--green); }
+.send-status.no { background: var(--red-soft); color: var(--red); }
+.inline-btn { border: none; background: none; color: inherit; text-decoration: underline; padding: 0; }
+
 .credit { margin-top: 40px; text-align: center; color: var(--muted); font-size: 0.8rem; }
 
 @keyframes pop { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }

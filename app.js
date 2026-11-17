@@ -19,6 +19,8 @@ const $ = (id) => document.getElementById(id);
 
 const state = {
   mode: "mix",
+  player: "",
+  sent: false,
   questions: [],
   index: 0,
   score: 0,
@@ -133,8 +135,18 @@ function renderHome() {
   $("cta-thumbs").innerHTML = ARTWORKS.map((a) => `<img src="${a.image}" alt="" />`).join("");
 }
 
+function openNameScreen() {
+  let saved = "";
+  try { saved = localStorage.getItem("quiz-player") || ""; } catch (e) {}
+  $("player-name").value = state.player || saved;
+  $("name-error").classList.add("hidden");
+  show("name-screen");
+  $("player-name").focus();
+}
+
 function startQuiz(mode) {
   state.mode = mode;
+  state.sent = false;
   state.questions = buildQuestions(mode);
   state.index = 0;
   state.score = 0;
@@ -254,6 +266,42 @@ function next() {
   else renderResult();
 }
 
+function sendResult() {
+  const status = $("send-status");
+  if (state.mode !== "mix" || state.sent) return;
+  if (typeof RESULT_URL === "undefined" || !RESULT_URL) {
+    status.classList.add("hidden");
+    return;
+  }
+  state.sent = true;
+  const seen = new Set();
+  const wrong = state.wrong.map((q) => q.art.title).filter((t) => !seen.has(t) && seen.add(t));
+  const payload = {
+    name: state.player,
+    score: state.score,
+    total: state.questions.length,
+    wrong: wrong.join(", "),
+  };
+  status.className = "send-status";
+  status.textContent = "선생님께 결과를 보내는 중이에요…";
+  fetch(RESULT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  })
+    .then(() => {
+      status.className = "send-status ok";
+      status.textContent = "✅ 선생님께 결과를 보냈어요.";
+    })
+    .catch(() => {
+      state.sent = false;
+      status.className = "send-status no";
+      status.innerHTML = '결과를 보내지 못했어요. 인터넷 연결을 확인하고 <button class="inline-btn" id="resend">다시 보내기</button>';
+      $("resend").addEventListener("click", sendResult);
+    });
+}
+
 function renderResult() {
   const total = state.questions.length;
   const ratio = state.score / total;
@@ -278,7 +326,16 @@ function renderResult() {
     $("review").innerHTML = "";
   }
   $("progress-bar").style.width = "100%";
+  const line = $("player-line");
+  if (state.mode === "mix" && state.player) {
+    line.textContent = `${state.player} 님의 결과`;
+    line.classList.remove("hidden");
+  } else {
+    line.classList.add("hidden");
+  }
+  $("send-status").classList.add("hidden");
   show("result");
+  sendResult();
 }
 
 function renderGallery() {
@@ -304,7 +361,9 @@ function openArt(id) {
 /* ---------- 이벤트 ---------- */
 $("home").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-mode]");
-  if (btn) startQuiz(btn.dataset.mode);
+  if (!btn) return;
+  if (btn.dataset.mode === "mix") openNameScreen();
+  else startQuiz(btn.dataset.mode);
 });
 $("choices").addEventListener("click", (e) => {
   const btn = e.target.closest(".choice");
@@ -317,7 +376,20 @@ document.addEventListener("keydown", (e) => {
 });
 $("next").addEventListener("click", next);
 $("quit").addEventListener("click", () => show("home"));
-$("retry").addEventListener("click", () => startQuiz(state.mode));
+$("retry").addEventListener("click", () => (state.mode === "mix" ? openNameScreen() : startQuiz(state.mode)));
+$("name-back").addEventListener("click", () => show("home"));
+$("name-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $("player-name").value.trim();
+  if (!name) {
+    $("name-error").classList.remove("hidden");
+    $("player-name").focus();
+    return;
+  }
+  state.player = name;
+  try { localStorage.setItem("quiz-player", name); } catch (err) {}
+  startQuiz("mix");
+});
 $("home-btn").addEventListener("click", () => show("home"));
 $("open-gallery").addEventListener("click", renderGallery);
 $("gallery-back").addEventListener("click", () => show("home"));

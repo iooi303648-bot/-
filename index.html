@@ -36,6 +36,22 @@
       </button>
     </section>
 
+    <!-- 이름 입력 화면 (종합 퀴즈) -->
+    <section class="screen hidden" id="name-screen">
+      <div class="quiz-top">
+        <button class="ghost-btn" id="name-back">← 처음으로</button>
+      </div>
+      <form class="name-form" id="name-form" novalidate>
+        <p class="eyebrow">🎨 종합 퀴즈</p>
+        <h2 class="section-title">이름을 입력해 주세요</h2>
+        <p class="lead">퀴즈가 끝나면 점수가 선생님께 전달돼요.</p>
+        <label class="sr-only" for="player-name">이름</label>
+        <input id="player-name" class="name-input" type="text" maxlength="20" autocomplete="off" placeholder="예: 3번 김하늘" />
+        <p class="name-error hidden" id="name-error">이름을 입력해야 시작할 수 있어요.</p>
+        <button class="primary-btn" type="submit">퀴즈 시작하기</button>
+      </form>
+    </section>
+
     <!-- 퀴즈 화면 -->
     <section class="screen hidden" id="quiz">
       <div class="quiz-top">
@@ -61,8 +77,10 @@
     <section class="screen hidden" id="result">
       <p class="eyebrow">퀴즈 끝!</p>
       <div class="stars" id="stars"></div>
+      <p class="player-line hidden" id="player-line"></p>
       <h2 class="result-score" id="result-score"></h2>
       <p class="lead" id="result-msg"></p>
+      <p class="send-status hidden" id="send-status"></p>
       <div class="review" id="review"></div>
       <div class="result-actions">
         <button class="primary-btn" id="retry">한 번 더 하기</button>
@@ -88,6 +106,7 @@
     <form method="dialog"><button class="primary-btn">닫기</button></form>
   </dialog>
 
+  <script src="config.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
