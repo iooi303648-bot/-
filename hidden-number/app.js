@@ -199,13 +199,24 @@ function tileNode(tile, { showNumber, asButton }) {
   return node;
 }
 
-const AVATAR_COLORS = ["#e2574c", "#3e8ede", "#e0a93b", "#9b59b6"];
+// 자리마다 받침대 색깔: 파랑, 노랑, 빨강, 초록
+const SEAT_COLORS = ["#2f6fd6", "#e6b123", "#d8423a", "#2e9b57"];
+
+function seatColor(player) {
+  const index = state.players.findIndex((p) => p.id === player.id);
+  return SEAT_COLORS[index % SEAT_COLORS.length];
+}
 
 function avatarNode(player) {
-  const index = state.players.findIndex((p) => p.id === player.id);
   const node = el("span", "avatar", [...player.name][0] || "?");
-  node.style.background = AVATAR_COLORS[index % AVATAR_COLORS.length];
+  node.style.background = seatColor(player);
   return node;
+}
+
+function rackNode(hand) {
+  const rack = el("div", "rack");
+  rack.append(hand);
+  return rack;
 }
 
 function renderGame(me) {
@@ -249,6 +260,7 @@ function renderGame(me) {
   $("opponents").replaceChildren(
     ...others.map((p) => {
       const box = el("div", "opponent");
+      box.style.setProperty("--seat", seatColor(p));
       if (p.id === turnPlayer.id && state.phase !== "over") box.classList.add("active");
       const out = G.isOut(p);
       if (out) box.classList.add("out");
@@ -280,17 +292,20 @@ function renderGame(me) {
         }
         hand.append(node);
       });
-      box.append(hand);
+      box.append(rackNode(hand));
       return box;
     }),
   );
 
   // 더미와 뽑은 타일
   $("pile-count").textContent = state.deck.length;
-  const stack = $("stack");
-  const stackSize = Math.min(3, state.deck.length);
-  stack.replaceChildren(
-    ...Array.from({ length: stackSize }, (_, i) => tileNode({ c: i % 2 ? "light" : "dark" }, { showNumber: false })),
+  // 가운데 판: 엎어 둔 타일들이 흩어져 있는 모습
+  $("tray").replaceChildren(
+    ...state.deck.map((t, i) => {
+      const node = tileNode(t, { showNumber: false });
+      node.style.setProperty("--tilt", `${((i * 37) % 23) - 11}deg`);
+      return node;
+    }),
   );
   const drawnBox = $("drawn-box");
   const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}` : "";
@@ -309,7 +324,8 @@ function renderGame(me) {
   renderPanel(me, myTurn);
 
   // 내 타일
-  $("my-title").textContent = `내 타일 (${me.name})`;
+  $("my-title").replaceChildren(avatarNode(me), el("span", "", `내 타일 (${me.name})`));
+  document.querySelector("#game .me").style.setProperty("--seat", seatColor(me));
   const myHand = $("my-hand");
   myHand.replaceChildren(
     ...me.hand.map((tile, index) => {

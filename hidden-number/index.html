@@ -4,18 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>숨은 숫자</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="app">
       <!-- 1. 처음 화면 -->
+      <div class="lights" aria-hidden="true"></div>
       <section id="home" class="screen">
-        <div class="title-tiles" aria-hidden="true">
-          <div class="tile light"><span>3</span></div>
-          <div class="tile dark back"></div>
-          <div class="tile dark"><span class="u">6</span></div>
-          <div class="tile light back"></div>
-          <div class="tile dark"><span>11</span></div>
+        <div class="rack title-tiles" style="--seat: #d8423a" aria-hidden="true">
+          <div class="hand">
+            <div class="tile light"><span>3</span></div>
+            <div class="tile dark back"></div>
+            <div class="tile dark"><span class="u">6</span></div>
+            <div class="tile light back"></div>
+            <div class="tile dark"><span>11</span></div>
+          </div>
         </div>
         <h1>숨은 숫자</h1>
         <p class="sub">친구의 숨은 숫자를 추리해서 맞히는 게임</p>
@@ -51,7 +57,9 @@
       <!-- 2. 대기실 -->
       <section id="lobby" class="screen hidden">
         <p class="sub">친구들에게 방 번호를 알려 주세요</p>
-        <div class="room-code" id="lobby-code" role="img"></div>
+        <div class="rack code-rack" style="--seat: #e6b123">
+          <div class="room-code hand" id="lobby-code" role="img"></div>
+        </div>
         <ul id="lobby-players" class="player-list"></ul>
         <p id="lobby-hint" class="hint"></p>
         <div class="row">
@@ -66,8 +74,8 @@
         <div id="opponents" class="opponents"></div>
 
         <div class="middle">
-          <div class="pile">
-            <div class="stack" id="stack" aria-hidden="true"></div>
+          <div class="board">
+            <div class="tray" id="tray" aria-hidden="true"></div>
             <div class="pile-text">
               <span class="pile-label">남은 타일</span>
               <span id="pile-count" class="pile-count"></span>
@@ -79,8 +87,8 @@
         <div id="panel" class="panel"></div>
 
         <div class="me">
-          <h2 id="my-title"></h2>
-          <div id="my-hand" class="hand"></div>
+          <h2 id="my-title" class="seat-head"></h2>
+          <div class="rack"><div id="my-hand" class="hand"></div></div>
         </div>
 
         <details class="log-box">
