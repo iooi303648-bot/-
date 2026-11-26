@@ -160,13 +160,19 @@ function render() {
 
 function renderLobby() {
   show("lobby");
-  $("lobby-code").textContent = roomCode;
+  const codeBox = $("lobby-code");
+  codeBox.replaceChildren(
+    ...[...roomCode].map((d, i) => tileNode({ n: Number(d), c: i % 2 ? "dark" : "light" }, { showNumber: true })),
+  );
+  codeBox.setAttribute("aria-label", `방 번호 ${roomCode}`);
   const list = $("lobby-players");
   list.replaceChildren(
     ...state.players.map((p) => {
-      const crown = p.id === state.hostId ? "👑 " : "🙂 ";
+      const li = el("li");
+      const crown = p.id === state.hostId ? " 👑" : "";
       const you = p.id === myId ? " (나)" : "";
-      return el("li", "", crown + p.name + you);
+      li.append(avatarNode(p), el("span", "", p.name + you + crown));
+      return li;
     }),
   );
   const isHost = state.hostId === myId;
@@ -182,13 +188,23 @@ function renderLobby() {
 
 function tileNode(tile, { showNumber, asButton }) {
   const node = el(asButton ? "button" : "div", `tile ${tile.c}`);
-  if (showNumber) node.textContent = tile.n;
-  else {
-    node.textContent = "?";
-    node.classList.add("hidden-tile");
+  if (showNumber) {
+    // 6과 9는 뒤집어 봐도 헷갈리지 않게 밑줄
+    node.append(el("span", tile.n === 6 || tile.n === 9 ? "u" : "", String(tile.n)));
+  } else {
+    node.classList.add("back");
   }
-  const colorName = tile.c === "dark" ? "밤색" : "낮색";
-  node.setAttribute("aria-label", showNumber ? `${colorName} ${tile.n}` : `${colorName} 숨은 타일`);
+  const colorName = tile.c === "dark" ? "검은" : "흰";
+  node.setAttribute("aria-label", showNumber ? `${colorName} 타일 ${tile.n}` : `${colorName} 숨은 타일`);
+  return node;
+}
+
+const AVATAR_COLORS = ["#e2574c", "#3e8ede", "#e0a93b", "#9b59b6"];
+
+function avatarNode(player) {
+  const index = state.players.findIndex((p) => p.id === player.id);
+  const node = el("span", "avatar", [...player.name][0] || "?");
+  node.style.background = AVATAR_COLORS[index % AVATAR_COLORS.length];
   return node;
 }
 
@@ -236,11 +252,21 @@ function renderGame(me) {
       if (p.id === turnPlayer.id && state.phase !== "over") box.classList.add("active");
       const out = G.isOut(p);
       if (out) box.classList.add("out");
-      box.append(el("div", "opponent-name", `${p.name}${out ? " 💥 탈락" : ""}${p.id === turnPlayer.id && state.phase !== "over" ? " ⏳" : ""}`));
+      const head = el("div", "seat-head");
+      const hiddenCount = p.hand.filter((t) => !t.open).length;
+      const nameBox = el("div");
+      const thinking = p.id === turnPlayer.id && state.phase !== "over" ? " ⏳" : "";
+      nameBox.append(
+        el("div", "seat-name", p.name + thinking),
+        el("div", "seat-info", out ? "💥 탈락" : `숨은 타일 ${hiddenCount}개`),
+      );
+      head.append(avatarNode(p), nameBox);
+      box.append(head);
       const hand = el("div", "hand");
       p.hand.forEach((tile, index) => {
         const pickable = canPick && !tile.open && !out;
         const node = tileNode(tile, { showNumber: tile.open || state.phase === "over", asButton: pickable });
+        if (tile.open) node.classList.add("revealed");
         if (pickable) {
           node.classList.add("pickable");
           node.addEventListener("click", () => {
@@ -261,14 +287,23 @@ function renderGame(me) {
 
   // 더미와 뽑은 타일
   $("pile-count").textContent = state.deck.length;
+  const stack = $("stack");
+  const stackSize = Math.min(3, state.deck.length);
+  stack.replaceChildren(
+    ...Array.from({ length: stackSize }, (_, i) => tileNode({ c: i % 2 ? "light" : "dark" }, { showNumber: false })),
+  );
   const drawnBox = $("drawn-box");
-  drawnBox.replaceChildren();
-  if (state.drawn && state.phase !== "over") {
-    const mine = turnPlayer.id === myId;
-    drawnBox.append(el("span", "", mine ? "내가 뽑은 타일" : `${turnPlayer.name}가 뽑은 타일`));
-    drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
-  } else if (state.phase !== "over" && state.deck.length === 0) {
-    drawnBox.append(el("span", "", "더미가 비었어요! 틀리면 내 타일 하나가 공개돼요."));
+  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}` : "";
+  if (drawnBox.dataset.key !== drawnKey || !drawnKey) {
+    drawnBox.dataset.key = drawnKey;
+    drawnBox.replaceChildren();
+    if (state.drawn && state.phase !== "over") {
+      const mine = turnPlayer.id === myId;
+      drawnBox.append(el("span", "drawn-label", mine ? "내가 뽑은 타일 →" : `${turnPlayer.name}가 뽑은 타일 →`));
+      drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
+    } else if (state.phase !== "over" && state.deck.length === 0) {
+      drawnBox.append(el("span", "drawn-label", "더미가 비었어요! 틀리면 내 타일 하나가 공개돼요."));
+    }
   }
 
   renderPanel(me, myTurn);
@@ -329,15 +364,16 @@ function renderPanel(me, myTurn) {
   }
 
   if (!selected) {
-    panel.append(el("p", "", "👆 친구의 ? 타일을 하나 눌러 주세요"));
+    panel.append(el("p", "", "👆 친구의 뒤집힌 타일을 하나 눌러 주세요"));
     return;
   }
 
   const target = state.players.find((p) => p.id === selected.targetId);
+  const color = target.hand[selected.index].c;
   panel.append(el("p", "", `${target.name}의 ${selected.index + 1}번째 타일은 몇일까요?`));
   const pad = el("div", "numpad");
   for (let n = 0; n <= G.MAX_NUMBER; n++) {
-    const b = el("button", "", String(n));
+    const b = tileNode({ n, c: color }, { showNumber: true, asButton: true });
     b.addEventListener("click", () => {
       const pick = selected;
       selected = null;

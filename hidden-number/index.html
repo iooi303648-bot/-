@@ -10,7 +10,14 @@
     <main class="app">
       <!-- 1. 처음 화면 -->
       <section id="home" class="screen">
-        <h1>🔢 숨은 숫자</h1>
+        <div class="title-tiles" aria-hidden="true">
+          <div class="tile light"><span>3</span></div>
+          <div class="tile dark back"></div>
+          <div class="tile dark"><span class="u">6</span></div>
+          <div class="tile light back"></div>
+          <div class="tile dark"><span>11</span></div>
+        </div>
+        <h1>숨은 숫자</h1>
         <p class="sub">친구의 숨은 숫자를 추리해서 맞히는 게임</p>
         <p id="mode-badge" class="badge"></p>
 
@@ -30,10 +37,10 @@
         <details class="rules">
           <summary>📖 게임 방법</summary>
           <ol>
-            <li>0~11 숫자 타일이 <b>밤색</b>과 <b>낮색</b>으로 한 장씩, 모두 24장 있어요.</li>
-            <li>내 타일은 항상 <b>작은 숫자 → 큰 숫자</b> 순서로 놓여요. 숫자가 같으면 밤색이 왼쪽이에요.</li>
+            <li>0~11 숫자 타일이 <b>검은색</b>과 <b>흰색</b>으로 한 장씩, 모두 24장 있어요.</li>
+            <li>내 타일은 항상 <b>작은 숫자 → 큰 숫자</b> 순서로 놓여요. 숫자가 같으면 검은색이 왼쪽이에요.</li>
             <li>내 차례가 되면 타일을 한 장 자동으로 뽑아요.</li>
-            <li>친구의 숨은 타일(?)을 하나 누르고, 숫자를 골라요.</li>
+            <li>친구의 숨은 타일(뒷면)을 하나 누르고, 숫자를 골라요.</li>
             <li>맞히면 그 타일이 공개돼요. <b>한 번 더</b> 맞히거나 <b>멈출</b> 수 있어요.</li>
             <li>틀리면 내가 뽑은 타일이 모두에게 공개되고 차례가 넘어가요.</li>
             <li>타일이 모두 공개되면 탈락! 마지막까지 남은 사람이 이겨요.</li>
@@ -44,7 +51,7 @@
       <!-- 2. 대기실 -->
       <section id="lobby" class="screen hidden">
         <p class="sub">친구들에게 방 번호를 알려 주세요</p>
-        <p class="room-code" id="lobby-code"></p>
+        <div class="room-code" id="lobby-code" role="img"></div>
         <ul id="lobby-players" class="player-list"></ul>
         <p id="lobby-hint" class="hint"></p>
         <div class="row">
@@ -60,8 +67,11 @@
 
         <div class="middle">
           <div class="pile">
-            <span class="pile-label">남은 타일</span>
-            <span id="pile-count" class="pile-count"></span>
+            <div class="stack" id="stack" aria-hidden="true"></div>
+            <div class="pile-text">
+              <span class="pile-label">남은 타일</span>
+              <span id="pile-count" class="pile-count"></span>
+            </div>
           </div>
           <div id="drawn-box" class="drawn-box"></div>
         </div>
