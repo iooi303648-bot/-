@@ -1,0 +1,460 @@
+:root {
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  line-height: 1.4;
+  --bg: #eef3fb;
+  --card: #ffffff;
+  --text: #1d2433;
+  --muted: #667085;
+  --accent: #3b6fe0;
+  --accent-dark: #2a55b8;
+  --good: #1f9d55;
+  --bad: #d64545;
+  --night: #1f2a44;
+  --night-text: #f5f7ff;
+  --day: #fff4d6;
+  --day-text: #3a2e10;
+  --day-border: #e6cf8f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #e7efff, #fdf6e6);
+  color: var(--text);
+}
+
+.app {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.screen {
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(20, 40, 90, 0.1);
+  padding: 24px 20px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 2rem;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+}
+
+.sub {
+  text-align: center;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.badge {
+  text-align: center;
+  font-size: 0.85rem;
+  margin: 0 auto 18px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.badge.online {
+  background: #e3f6ea;
+  color: #17643a;
+}
+
+.badge.local {
+  background: #fff1d6;
+  color: #7a5200;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: #e4e9f3;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+input {
+  border: 2px solid #d5dcea;
+  border-radius: 12px;
+  padding: 11px 14px;
+  min-width: 0;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  max-width: 360px;
+  margin: 0 auto 14px;
+}
+
+.home-actions {
+  display: grid;
+  gap: 10px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.join-row {
+  display: flex;
+  gap: 8px;
+}
+
+.join-row input {
+  flex: 1;
+}
+
+.rules {
+  max-width: 520px;
+  margin: 22px auto 0;
+  background: #f5f7fc;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.rules summary,
+.log-box summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.rules ol {
+  padding-left: 20px;
+  margin: 10px 0 4px;
+}
+
+.rules li {
+  margin-bottom: 6px;
+}
+
+/* 대기실 */
+.room-code {
+  text-align: center;
+  font-size: 3.2rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  margin: 4px 0 16px;
+  color: var(--accent-dark);
+}
+
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto 12px;
+  max-width: 320px;
+  display: grid;
+  gap: 8px;
+}
+
+.player-list li {
+  background: #f3f6fc;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.hint {
+  text-align: center;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* 게임 */
+.banner {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.15rem;
+  padding: 12px;
+  border-radius: 12px;
+  background: #eef2fa;
+  margin-bottom: 16px;
+}
+
+.banner.my-turn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.banner.over {
+  background: #ffe9a8;
+}
+
+.opponents {
+  display: grid;
+  gap: 12px;
+}
+
+.opponent {
+  border: 2px solid #e4e9f3;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.opponent.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 111, 224, 0.15);
+}
+
+.opponent.out {
+  opacity: 0.55;
+}
+
+.opponent-name {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tile {
+  width: 52px;
+  height: 72px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  transition: transform 0.15s;
+}
+
+.tile.dark {
+  background: var(--night);
+  color: var(--night-text);
+}
+
+.tile.light {
+  background: var(--day);
+  color: var(--day-text);
+  border-color: var(--day-border);
+}
+
+.tile.hidden-tile {
+  font-size: 1.4rem;
+}
+
+.tile.dark.hidden-tile {
+  background: repeating-linear-gradient(45deg, #1f2a44, #1f2a44 6px, #26345a 6px, #26345a 12px);
+  color: #8fa2d6;
+}
+
+.tile.light.hidden-tile {
+  background: repeating-linear-gradient(45deg, #fff4d6, #fff4d6 6px, #fbe9bb 6px, #fbe9bb 12px);
+  color: #b69545;
+}
+
+button.tile.pickable {
+  cursor: pointer;
+}
+
+button.tile.pickable:hover {
+  transform: translateY(-4px);
+}
+
+.tile.selected {
+  outline: 4px solid var(--accent);
+  outline-offset: 2px;
+  transform: translateY(-4px);
+}
+
+.tile.flash-good {
+  animation: flash-good 1.2s;
+}
+
+.tile.flash-bad {
+  animation: flash-bad 1.2s;
+}
+
+@keyframes flash-good {
+  0%, 60% { box-shadow: 0 0 0 5px var(--good); }
+  100% { box-shadow: none; }
+}
+
+@keyframes flash-bad {
+  0%, 60% { box-shadow: 0 0 0 5px var(--bad); }
+  100% { box-shadow: none; }
+}
+
+/* 내 타일: 공개된 것엔 눈 표시, 숨긴 건 자물쇠 */
+.tile .mark {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.75rem;
+  color: #1d2433;
+  background: #fff;
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.me .tile.open-mine {
+  opacity: 0.6;
+}
+
+.middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin: 18px 0;
+  flex-wrap: wrap;
+}
+
+.pile {
+  display: grid;
+  text-align: center;
+}
+
+.pile-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.pile-count {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.drawn-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.panel {
+  background: #f5f7fc;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.panel:empty {
+  display: none;
+}
+
+.panel p {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.numpad button {
+  font-size: 1.3rem;
+  padding: 12px 0;
+  background: #fff;
+  border: 2px solid #d5dcea;
+}
+
+.numpad button:disabled {
+  opacity: 0.3;
+}
+
+.me {
+  border-top: 2px dashed #e4e9f3;
+  padding-top: 14px;
+}
+
+.log-box {
+  margin-top: 16px;
+  color: var(--muted);
+}
+
+.log-box ul {
+  padding-left: 18px;
+  margin: 8px 0 0;
+  max-height: 200px;
+  overflow: auto;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  background: #1d2433;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  z-index: 10;
+}
+
+@media (max-width: 480px) {
+  .tile {
+    width: 42px;
+    height: 60px;
+    font-size: 1.3rem;
+  }
+  .room-code {
+    font-size: 2.4rem;
+  }
+}
