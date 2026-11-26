@@ -3,103 +3,103 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>숨은 숫자</title>
+    <meta name="theme-color" content="#234d42" />
+    <meta name="description" content="흑백 타일 사이에 숨은 숫자를 찾아보세요. 친구와 함께하는 2~4인 숫자 추리 게임." />
+    <title>숨은 숫자 · 함께하는 숫자 추리 게임</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="app">
-      <!-- 1. 처음 화면 -->
-      <div class="lights" aria-hidden="true"></div>
-      <section id="home" class="screen">
-        <div class="rack title-tiles" style="--seat: #d8423a" aria-hidden="true">
-          <div class="hand">
-            <div class="tile light"><span>3</span></div>
-            <div class="tile dark back"></div>
-            <div class="tile dark"><span class="u">6</span></div>
-            <div class="tile light back"></div>
-            <div class="tile dark"><span>11</span></div>
+      <header class="site-header">
+        <div class="wordmark"><span class="brand-mark" aria-hidden="true"><i>?</i><i>7</i></span><span>숨은 숫자</span></div>
+        <div class="header-tools"><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
+      </header>
+      <section id="home" class="screen home-screen" aria-label="게임 시작">
+        <div class="home-layout">
+          <div class="intro">
+            <p class="eyebrow">흑과 백 사이, 작은 단서 하나</p>
+            <h1>쉿,<br />어떤 숫자일까?</h1>
+            <p class="intro-copy">보이는 건 색깔과 순서뿐.<br />친구의 숫자를 하나씩 알아맞혀 보세요.</p>
+            <div class="tile-scene" aria-hidden="true">
+              <div class="scene-note">분명, 이 사이에 있어.</div>
+              <div class="hero-tiles">
+                <div class="tile light hero-first"><span>3</span><small>공개</small></div>
+                <div class="tile dark back hero-mystery"><span class="mystery-symbol">?</span></div>
+                <div class="tile light hero-third"><span class="u">6</span><small>공개</small></div>
+                <div class="tile dark back hero-fourth"></div>
+              </div>
+              <div class="scene-rail"></div>
+            </div>
+            <div class="game-facts"><span>2–4명</span><span>숫자 0–11</span><span>타일 24장</span></div>
+            <button id="demo-hand" class="table-demo">타일 집어보기</button>
+          </div>
+          <div class="entry-card">
+            <div class="entry-heading"><span class="small-label">같이 할 준비됐나요?</span><h2>자리를 만들어 볼까요</h2></div>
+            <label class="field" for="name">내 이름<input id="name" maxlength="8" placeholder="친구들이 부를 이름" autocomplete="off" /></label>
+            <div class="home-actions">
+              <button id="create" class="primary" disabled>새 방 만들기</button>
+              <div class="divider"><span>초대받았다면</span></div>
+              <label class="field code-field" for="code">방 번호</label>
+              <div class="join-row"><input id="code" aria-label="방 번호 4자리" inputmode="numeric" maxlength="4" placeholder="숫자 4자리" autocomplete="off" /><button id="join" disabled>들어가기</button></div>
+            </div>
+            <p id="mode-badge" class="badge">게임을 준비하고 있어요…</p>
           </div>
         </div>
-        <h1>숨은 숫자</h1>
-        <p class="sub">친구의 숨은 숫자를 추리해서 맞히는 게임</p>
-        <p id="mode-badge" class="badge"></p>
-
-        <label class="field">
-          내 이름
-          <input id="name" maxlength="8" placeholder="예: 민준" autocomplete="off" />
-        </label>
-
-        <div class="home-actions">
-          <button id="create" class="primary">새 방 만들기</button>
-          <div class="join-row">
-            <input id="code" inputmode="numeric" maxlength="4" placeholder="방 번호 4자리" autocomplete="off" />
-            <button id="join">들어가기</button>
-          </div>
+        <div class="quick-guide" aria-label="게임 방법 요약">
+          <div><span class="guide-symbol" aria-hidden="true">↕</span><p><b>순서가 힌트예요</b><span>작은 숫자부터 나란히 놓여요.</span></p></div>
+          <div><span class="guide-symbol guide-target" aria-hidden="true"></span><p><b>하나를 골라 맞혀요</b><span>친구의 숨은 타일을 눌러 보세요.</span></p></div>
+          <div><span class="guide-symbol" aria-hidden="true">＋</span><p><b>맞혔다면 한 번 더</b><span>계속 도전할지, 멈출지 골라요.</span></p></div>
         </div>
-
         <details class="rules">
-          <summary>📖 게임 방법</summary>
+          <summary>게임 방법 자세히 보기<span class="details-plus" aria-hidden="true">＋</span></summary>
           <ol>
             <li>0~11 숫자 타일이 <b>검은색</b>과 <b>흰색</b>으로 한 장씩, 모두 24장 있어요.</li>
-            <li>내 타일은 항상 <b>작은 숫자 → 큰 숫자</b> 순서로 놓여요. 숫자가 같으면 검은색이 왼쪽이에요.</li>
+            <li>타일은 <b>작은 숫자 → 큰 숫자</b> 순서로 놓여요. 숫자가 같으면 검은색이 왼쪽이에요.</li>
             <li>내 차례가 되면 타일을 한 장 자동으로 뽑아요.</li>
-            <li>친구의 숨은 타일(뒷면)을 하나 누르고, 숫자를 골라요.</li>
+            <li>친구의 숨은 타일 하나를 누르고, 숫자를 골라요.</li>
             <li>맞히면 그 타일이 공개돼요. <b>한 번 더</b> 맞히거나 <b>멈출</b> 수 있어요.</li>
-            <li>틀리면 내가 뽑은 타일이 모두에게 공개되고 차례가 넘어가요.</li>
+            <li>틀리면 내가 뽑은 타일이 공개되고 차례가 넘어가요. 더미가 비었다면 내 숨은 타일 하나가 무작위로 공개돼요.</li>
             <li>타일이 모두 공개되면 탈락! 마지막까지 남은 사람이 이겨요.</li>
           </ol>
         </details>
       </section>
-
-      <!-- 2. 대기실 -->
-      <section id="lobby" class="screen hidden">
-        <p class="sub">친구들에게 방 번호를 알려 주세요</p>
-        <div class="rack code-rack" style="--seat: #e6b123">
-          <div class="room-code hand" id="lobby-code" role="img"></div>
-        </div>
-        <ul id="lobby-players" class="player-list"></ul>
-        <p id="lobby-hint" class="hint"></p>
-        <div class="row">
-          <button id="start" class="primary hidden">게임 시작</button>
-          <button id="leave">나가기</button>
-        </div>
+      <section id="lobby" class="screen lobby-screen hidden" aria-label="대기실">
+        <span class="eyebrow">우리끼리 한 판</span><h1>친구를 기다리는 중</h1>
+        <p class="sub">아래 방 번호를 친구들에게 알려 주세요.</p>
+        <div class="rack code-rack"><div class="room-code hand" id="lobby-code" role="img"></div></div>
+        <div class="lobby-paper"><div class="lobby-list-heading"><h2>함께할 친구들</h2><span>최대 4명</span></div><ul id="lobby-players" class="player-list"></ul><p id="lobby-hint" class="hint" role="status"></p><div class="row"><button id="start" class="primary hidden">게임 시작</button><button id="leave" class="quiet">나가기</button></div></div>
       </section>
-
-      <!-- 3. 게임 화면 -->
-      <section id="game" class="screen hidden">
-        <div id="banner" class="banner"></div>
+      <section id="game" class="screen game-screen hidden" aria-label="게임판">
+        <div class="game-topline"><span class="table-label">숨은 숫자</span><div id="banner" class="banner" role="status"></div></div>
         <div id="opponents" class="opponents"></div>
-
-        <div class="middle">
-          <div class="board">
-            <div class="tray" id="tray" aria-hidden="true"></div>
-            <div class="pile-text">
-              <span class="pile-label">남은 타일</span>
-              <span id="pile-count" class="pile-count"></span>
-            </div>
-          </div>
-          <div id="drawn-box" class="drawn-box"></div>
-        </div>
-
-        <div id="panel" class="panel"></div>
-
-        <div class="me">
-          <h2 id="my-title" class="seat-head"></h2>
-          <div class="rack"><div id="my-hand" class="hand"></div></div>
-        </div>
-
-        <details class="log-box">
-          <summary>📜 기록</summary>
-          <ul id="log"></ul>
-        </details>
+        <div class="turn-area"><div class="middle"><div class="board"><div class="tray" id="tray" aria-hidden="true"></div><div class="pile-text"><span class="pile-label">남은 타일</span><span id="pile-count" class="pile-count"></span></div></div><div id="drawn-box" class="drawn-box"></div></div><div id="panel" class="panel"></div></div>
+        <div class="me"><h2 id="my-title" class="seat-head"></h2><div class="rack"><div id="my-hand" class="hand"></div></div></div>
+        <details class="log-box"><summary>이번 판 기록<span class="details-plus" aria-hidden="true">＋</span></summary><ul id="log"></ul></details>
       </section>
-
+      <footer class="site-footer"><span>숨은 숫자</span><span>천천히 보고, 대담하게 맞혀요.</span></footer>
       <p id="toast" class="toast hidden" role="status"></p>
     </main>
-
-    <script type="module" src="app.js"></script>
+    <script>
+      // 파일 직접 열기는 일반 스크립트, 웹 주소는 기존 모듈을 사용합니다.
+      (() => {
+        const script = document.createElement("script");
+        const localFile = location.protocol === "file:";
+        if (!localFile) script.type = "module";
+        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261126-5";
+        script.onerror = () => {
+          const message = localFile
+            ? "미리보기 파일을 읽지 못했어요. ZIP 압축을 모두 풀고 local-preview.js가 index.html과 같은 폴더에 있는지 확인해 주세요."
+            : "게임 파일을 읽지 못했어요. app.js, game.js, net.js, motion.js, firebase-config.js가 index.html과 같은 폴더에 업로드됐는지 확인해 주세요.";
+          document.getElementById("mode-badge").textContent = message;
+          const toast = document.getElementById("toast");
+          toast.textContent = message;
+          toast.classList.remove("hidden");
+        };
+        document.body.append(script);
+      })();
+    </script>
   </body>
 </html>
