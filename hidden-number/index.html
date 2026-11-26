@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>숨은 숫자</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <!-- 1. 처음 화면 -->
+      <section id="home" class="screen">
+        <h1>🔢 숨은 숫자</h1>
+        <p class="sub">친구의 숨은 숫자를 추리해서 맞히는 게임</p>
+        <p id="mode-badge" class="badge"></p>
+
+        <label class="field">
+          내 이름
+          <input id="name" maxlength="8" placeholder="예: 민준" autocomplete="off" />
+        </label>
+
+        <div class="home-actions">
+          <button id="create" class="primary">새 방 만들기</button>
+          <div class="join-row">
+            <input id="code" inputmode="numeric" maxlength="4" placeholder="방 번호 4자리" autocomplete="off" />
+            <button id="join">들어가기</button>
+          </div>
+        </div>
+
+        <details class="rules">
+          <summary>📖 게임 방법</summary>
+          <ol>
+            <li>0~11 숫자 타일이 <b>밤색</b>과 <b>낮색</b>으로 한 장씩, 모두 24장 있어요.</li>
+            <li>내 타일은 항상 <b>작은 숫자 → 큰 숫자</b> 순서로 놓여요. 숫자가 같으면 밤색이 왼쪽이에요.</li>
+            <li>내 차례가 되면 타일을 한 장 자동으로 뽑아요.</li>
+            <li>친구의 숨은 타일(?)을 하나 누르고, 숫자를 골라요.</li>
+            <li>맞히면 그 타일이 공개돼요. <b>한 번 더</b> 맞히거나 <b>멈출</b> 수 있어요.</li>
+            <li>틀리면 내가 뽑은 타일이 모두에게 공개되고 차례가 넘어가요.</li>
+            <li>타일이 모두 공개되면 탈락! 마지막까지 남은 사람이 이겨요.</li>
+          </ol>
+        </details>
+      </section>
+
+      <!-- 2. 대기실 -->
+      <section id="lobby" class="screen hidden">
+        <p class="sub">친구들에게 방 번호를 알려 주세요</p>
+        <p class="room-code" id="lobby-code"></p>
+        <ul id="lobby-players" class="player-list"></ul>
+        <p id="lobby-hint" class="hint"></p>
+        <div class="row">
+          <button id="start" class="primary hidden">게임 시작</button>
+          <button id="leave">나가기</button>
+        </div>
+      </section>
+
+      <!-- 3. 게임 화면 -->
+      <section id="game" class="screen hidden">
+        <div id="banner" class="banner"></div>
+        <div id="opponents" class="opponents"></div>
+
+        <div class="middle">
+          <div class="pile">
+            <span class="pile-label">남은 타일</span>
+            <span id="pile-count" class="pile-count"></span>
+          </div>
+          <div id="drawn-box" class="drawn-box"></div>
+        </div>
+
+        <div id="panel" class="panel"></div>
+
+        <div class="me">
+          <h2 id="my-title"></h2>
+          <div id="my-hand" class="hand"></div>
+        </div>
+
+        <details class="log-box">
+          <summary>📜 기록</summary>
+          <ul id="log"></ul>
+        </details>
+      </section>
+
+      <p id="toast" class="toast hidden" role="status"></p>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
