@@ -31,16 +31,22 @@ function shuffle(list, rng) {
   return a;
 }
 
+// 조커: 숫자가 없는 타일 (j: true). 검은 조커 1장 + 흰 조커 1장.
+const JOKER = "J";
+const isJoker = (t) => Boolean(t && t.j);
+
 function makeDeck(rng) {
   const tiles = [];
   for (let n = 0; n <= MAX_NUMBER; n++) {
     tiles.push({ n, c: "dark" }, { n, c: "light" });
   }
+  tiles.push({ n: null, c: "dark", j: true }, { n: null, c: "light", j: true });
   return shuffle(tiles, rng);
 }
 
+// 숫자 타일 넣기: 조커는 자리가 고정이라 건너뛰고, 숫자 타일끼리만 순서를 맞춰요.
 function insertSorted(hand, tile) {
-  const i = hand.findIndex((t) => compareTiles(tile, t) < 0);
+  const i = hand.findIndex((t) => !isJoker(t) && compareTiles(tile, t) < 0);
   if (i === -1) hand.push(tile);
   else hand.splice(i, 0, tile);
 }
@@ -70,7 +76,22 @@ function createRoom(hostId, hostName) {
     lastGuess: null,
     winnerId: null,
     log: [],
+    chat: [],
+    createdAt: Date.now(),
   };
+}
+
+// 채팅 한 줄 추가 (최근 40개만 보관). 글 다듬기·비속어 가리기는 보내는 쪽에서 해요.
+const CHAT_KEEP = 40;
+function addChat(state, id, text) {
+  const player = state.players.find((p) => p.id === id);
+  if (!player) throw new Error("방에 있는 사람만 채팅할 수 있어요.");
+  const clean = String(text ?? "").trim().slice(0, 60);
+  if (!clean) throw new Error("메시지를 써 주세요.");
+  const chat = Array.isArray(state.chat) ? state.chat : [];
+  chat.push({ id, name: player.name, text: clean, t: Date.now() });
+  state.chat = chat.slice(-CHAT_KEEP);
+  return state;
 }
 
 function addPlayer(state, id, name) {
@@ -95,8 +116,13 @@ function startGame(state, byId, rng = Math.random) {
   const handSize = state.players.length >= 4 ? 3 : 4;
   state.players = shuffle(state.players, rng).map((p) => {
     const hand = [];
-    for (let i = 0; i < handSize; i++) insertSorted(hand, { ...deck.pop(), open: false });
-    return { ...p, hand };
+    const pending = [];
+    for (let i = 0; i < handSize; i++) {
+      const tile = { ...deck.pop(), open: false };
+      if (isJoker(tile)) pending.push(tile);
+      else insertSorted(hand, tile);
+    }
+    return pending.length ? { ...p, hand, pending } : { ...p, hand };
   });
   state.deck = deck;
   state.phase = "guess";
@@ -105,13 +131,50 @@ function startGame(state, byId, rng = Math.random) {
   state.lastGuess = null;
   state.log = [];
   addLog(state, `게임 시작! 첫 차례는 ${state.players[0].name}`);
-  beginTurn(state);
+  state.drawnIndex = null;
+  if (state.players.some((p) => p.pending?.length)) {
+    // 처음 받은 조커를 놓을 자리부터 골라요
+    state.phase = "setup";
+    state.drawn = null;
+  } else {
+    beginTurn(state);
+  }
   return state;
+}
+
+// 조커 자리 정하기. index = 내 받침대에서 놓을 칸 (0 = 맨 왼쪽)
+function placeJoker(state, byId, index) {
+  const player = state.players.find((p) => p.id === byId);
+  if (!player) throw new Error("방에 없는 사람이에요.");
+  const at = (hand) => Math.max(0, Math.min(Number(index) || 0, hand.length));
+
+  if (state.phase === "setup") {
+    if (!player.pending?.length) throw new Error("놓을 조커가 없어요.");
+    const tile = player.pending.shift();
+    if (!player.pending.length) delete player.pending;
+    player.hand.splice(at(player.hand), 0, { ...tile, open: false, fixed: true });
+    if (!state.players.some((p) => p.pending?.length)) {
+      addLog(state, "조커 자리를 모두 정했어요");
+      beginTurn(state);
+    }
+    return state;
+  }
+  if (state.phase === "joker") {
+    if (currentPlayer(state).id !== byId) throw new Error("내 차례가 아니에요.");
+    const i = at(player.hand);
+    player.hand.splice(i, 0, { ...state.drawn, open: false, fixed: true });
+    state.drawn = null;
+    state.drawnIndex = i; // 틀리면 이 조커가 공개돼요
+    state.phase = "guess";
+    return state;
+  }
+  throw new Error("지금은 조커를 놓을 수 없어요.");
 }
 
 function beginTurn(state) {
   state.drawn = state.deck.length ? { ...state.deck.pop(), open: false } : null;
-  state.phase = "guess";
+  state.drawnIndex = null;
+  state.phase = isJoker(state.drawn) ? "joker" : "guess";
 }
 
 function nextTurn(state) {
@@ -157,12 +220,14 @@ function guess(state, byId, targetId, tileIndex, number) {
   const tile = target.hand[tileIndex];
   if (!tile || tile.open) throw new Error("이미 공개된 타일이에요.");
 
-  const correct = tile.n === number;
+  const saysJoker = number === JOKER;
+  const correct = isJoker(tile) ? saysJoker : !saysJoker && tile.n === number;
+  const said = saysJoker ? "조커" : number;
   state.lastGuess = { byId, targetId, tileIndex, number, correct };
 
   if (correct) {
     tile.open = true;
-    addLog(state, `⭕ ${me.name} → ${target.name}의 타일은 ${number}! 정답`);
+    addLog(state, `⭕ ${me.name} → ${target.name}의 타일은 ${said}! 정답`);
     if (checkWinner(state)) {
       if (state.drawn) insertSorted(me.hand, state.drawn);
       state.drawn = null;
@@ -170,8 +235,12 @@ function guess(state, byId, targetId, tileIndex, number) {
     }
     state.phase = "continue";
   } else {
-    addLog(state, `❌ ${me.name} → ${target.name}의 타일이 ${number}? 틀렸어요`);
-    if (state.drawn) {
+    addLog(state, `❌ ${me.name} → ${target.name}의 타일이 ${said}? 틀렸어요`);
+    if (state.drawnIndex != null && me.hand[state.drawnIndex]) {
+      // 이번에 뽑아서 놓은 조커를 공개
+      me.hand[state.drawnIndex].open = true;
+      state.drawnIndex = null;
+    } else if (state.drawn) {
       insertSorted(me.hand, { ...state.drawn, open: true });
       state.drawn = null;
     } else {
@@ -219,6 +288,10 @@ function leaveGame(state, id) {
   if (state.phase === "over") return state;
 
   const wasTurn = state.turn === index;
+  if (player.pending?.length) {
+    player.hand.push(...player.pending);
+    delete player.pending;
+  }
   const alreadyOut = isOut(player);
   player.hand.forEach((t) => { t.open = true; });
   player.outLogged = true;
@@ -226,13 +299,21 @@ function leaveGame(state, id) {
 
   // 나간 사람이 뽑아 둔 타일은 더미로 되돌림
   if (wasTurn && state.drawn) {
-    const { n, c } = state.drawn;
-    state.deck.splice(Math.floor(Math.random() * (state.deck.length + 1)), 0, { n, c });
+    const { open, fixed, ...tile } = state.drawn; // 조커 표시(j)는 그대로
+    state.deck.splice(Math.floor(Math.random() * (state.deck.length + 1)), 0, tile);
     state.drawn = null;
   }
   if (checkWinner(state)) {
     if (state.drawn) insertSorted(currentPlayer(state).hand, state.drawn);
     state.drawn = null;
+    return state;
+  }
+  if (state.phase === "setup") {
+    if (!state.players.some((p) => p.pending?.length && !p.left)) {
+      // 남은 사람들이 조커를 다 놓았으면 시작. 첫 차례가 나간 사람이면 다음 사람으로
+      if (isOut(currentPlayer(state))) nextTurn(state);
+      else beginTurn(state);
+    }
     return state;
   }
   if (wasTurn) nextTurn(state);
@@ -244,6 +325,7 @@ function backToLobby(state, byId) {
   if (byId !== state.hostId) throw new Error("방장만 할 수 있어요.");
   state.phase = "lobby";
   state.players = state.players.filter((p) => !p.left).map(({ id, name }) => ({ id, name, hand: [] }));
+  state.drawnIndex = null;
   state.deck = [];
   state.drawn = null;
   state.lastGuess = null;
@@ -252,7 +334,7 @@ function backToLobby(state, byId) {
   return state;
 }
 
-return { MAX_NUMBER, MIN_PLAYERS, MAX_PLAYERS, compareTiles, isOut, createRoom, addPlayer, removePlayer, startGame, currentPlayer, guess, stop, keepGoing, leaveGame, backToLobby };
+return { MAX_NUMBER, MIN_PLAYERS, MAX_PLAYERS, compareTiles, JOKER, isJoker, isOut, createRoom, CHAT_KEEP, addChat, addPlayer, removePlayer, startGame, placeJoker, currentPlayer, guess, stop, keepGoing, leaveGame, backToLobby };
 })();
 const firebaseConfig = {};
 // 손과 타일은 화면 위에서만 움직입니다. 게임 상태나 버튼 입력은 기다리지 않습니다.
@@ -563,6 +645,7 @@ function createSound() {
     lose() {
       [G5, E5, C5].forEach((f, i) => tone(f, i * 0.2, 0.32, { type: "triangle", gain: 0.2 }));
     },
+    chat() { tone(880, 0, 0.07, { gain: 0.12 }); tone(1320, 0.07, 0.1, { gain: 0.1 }); },
     out() {
       tone(392, 0, 0.25, { type: "triangle", gain: 0.25, to: 330 });
       tone(311, 0.25, 0.5, { type: "triangle", gain: 0.25, to: 196 });
@@ -593,6 +676,37 @@ function createSound() {
       sync();
     },
   };
+}
+
+// 채팅 비속어 가리기
+// 흔한 욕설을 *** 로 바꿔요. 글자 사이에 띄어쓰기·숫자·기호를 넣어도 잡아요 (예: "시 1 발").
+// 모든 나쁜 말을 막을 수는 없어요. 단어를 더 막고 싶으면 아래 목록에 추가하세요.
+const BAD_WORDS = [
+  "시발", "씨발", "씨빨", "씨바", "시바", "ㅅㅂ", "ㅆㅂ", "ㅅ ㅂ", "십새", "씹",
+  "병신", "븅신", "빙신", "ㅂㅅ",
+  "개새끼", "개새기", "새끼야", "새기야", "ㅅㄲ",
+  "지랄", "ㅈㄹ", "좆", "존나", "졸라", "ㅈㄴ", "좃",
+  "미친놈", "미친년", "미친새", "ㅁㅊ",
+  "닥쳐", "꺼져", "엿먹", "썅", "쌍놈", "염병", "엠창", "니애미", "느금", "애미", "애비",
+  "또라이", "찐따", "등신",
+  "fuck", "shit", "bitch", "damn",
+];
+
+const escape = (ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// 글자 사이에 공백·숫자·기호가 끼어 있어도 잡도록
+const GAP = "[\\s\\d_\\-.,!?~*^'\"`·•/\\\\]*";
+const PATTERNS = BAD_WORDS
+  .map((w) => w.replace(/\s/g, ""))
+  .filter(Boolean)
+  .sort((a, b) => b.length - a.length)
+  .map((w) => new RegExp([...w].map(escape).join(GAP), "gi"));
+
+const CHAT_MAX = 60;
+
+function cleanText(text) {
+  let out = String(text ?? "").replace(/\s+/g, " ").trim().slice(0, CHAT_MAX);
+  for (const re of PATTERNS) out = out.replace(re, (m) => "*".repeat(Math.min(m.length, 6)));
+  return out;
 }
 
 // 게임 방 상태를 여러 기기가 함께 보도록 연결하는 부분.
@@ -761,17 +875,18 @@ let selectedTurnKey = "";
 
 // ---------- 작은 도우미 ----------
 let toastTimer = null;
-function toast(message) {
+function toast(message, duration = 2600) {
   const el = $("toast");
   el.textContent = message;
   el.classList.remove("hidden");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add("hidden"), 2600);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), duration);
 }
 
 let activeScreen = null;
 function show(screenId) {
   $("home-btn")?.classList.toggle("hidden", screenId === "home");
+  $("chat")?.classList.toggle("hidden", screenId === "home");
   for (const id of ["home", "lobby", "game"]) $(id).classList.toggle("hidden", id !== screenId);
   if (activeScreen !== screenId) {
     motion.cancel();
@@ -809,6 +924,7 @@ function watch(code) {
   roomCode = code;
   lastLogLength = 0;
   soundPrev = null; // 방에 처음 들어올 때는 소리 없이 시작
+  resetChat();
   return new Promise((resolve) => {
     let first = true;
     unsubscribe = net.subscribe(code, (s) => {
@@ -937,6 +1053,10 @@ function playStateSounds(next) {
     return;
   }
   if (prev.phase === "lobby") {
+    // 순서는 게임 시작 때 무작위로 섞여요. 모두에게 알려 주기
+    const order = next.players.map((p) => (p.id === myId ? `${p.name}(나)` : p.name)).join(" → ");
+    const first = next.players[next.turn];
+    toast(`🎲 순서를 섞었어요! ${first.id === myId ? "내가" : first.name + "이(가)"} 먼저 해요\n${order}`, 4500);
     queue("start");
     if (cur.turnId === myId) queue("myturn");
     return;
@@ -968,6 +1088,89 @@ function render() {
   syncLobby();
   if (state.phase === "lobby") renderLobby();
   else renderGame(me);
+  renderChat();
+}
+
+// ---------- 채팅 ----------
+let chatSeen = -1;      // 지금까지 본 마지막 메시지 시각 (-1: 아직 처음)
+let chatUnread = 0;
+let chatLastSent = 0;
+let peekTimer = null;
+
+function resetChat() {
+  chatSeen = -1;
+  chatUnread = 0;
+  $("chat-list")?.replaceChildren();
+  setChatOpen(false);
+  updateUnread();
+}
+
+function setChatOpen(open) {
+  $("chat-panel").classList.toggle("hidden", !open);
+  $("chat-toggle").setAttribute("aria-expanded", String(open));
+  if (open) {
+    chatUnread = 0;
+    updateUnread();
+    $("chat-peek").classList.add("hidden");
+    const list = $("chat-list");
+    list.scrollTop = list.scrollHeight;
+    setTimeout(() => $("chat-input").focus(), 30);
+  }
+}
+
+function updateUnread() {
+  const badge = $("chat-unread");
+  badge.textContent = chatUnread > 9 ? "9+" : String(chatUnread);
+  badge.classList.toggle("hidden", chatUnread === 0);
+}
+
+function renderChat() {
+  const chat = Array.isArray(state?.chat) ? state.chat : [];
+  const list = $("chat-list");
+  const open = !$("chat-panel").classList.contains("hidden");
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  const fresh = chatSeen < 0 ? [] : chat.filter((m) => m.t > chatSeen && m.id !== myId);
+
+  list.replaceChildren(
+    ...(chat.length ? chat.map((m) => {
+      const li = el("li", m.id === myId ? "chat-msg mine" : "chat-msg");
+      if (m.id !== myId) li.append(el("span", "chat-name", m.name));
+      li.append(el("span", "chat-text", cleanText(m.text)));
+      return li;
+    }) : [el("li", "chat-empty", "아직 메시지가 없어요. 인사해 볼까요?")]),
+  );
+  if (open ? atBottom || fresh.length : true) list.scrollTop = list.scrollHeight;
+
+  if (fresh.length) {
+    sound.play("chat");
+    if (!open) {
+      chatUnread += fresh.length;
+      updateUnread();
+      const last = fresh[fresh.length - 1];
+      const peek = $("chat-peek");
+      peek.textContent = `${last.name}: ${cleanText(last.text)}`;
+      peek.classList.remove("hidden");
+      clearTimeout(peekTimer);
+      peekTimer = setTimeout(() => peek.classList.add("hidden"), 3500);
+    }
+  }
+  chatSeen = chat.length ? chat[chat.length - 1].t : 0;
+}
+
+async function sendChat(event) {
+  event.preventDefault();
+  const input = $("chat-input");
+  const text = cleanText(input.value);
+  if (!text || !roomCode) return;
+  const now = Date.now();
+  if (now - chatLastSent < 1500) return toast("조금 천천히 보내 주세요.");
+  const mine = (state?.chat || []).filter((m) => m.id === myId);
+  if (mine.length && mine[mine.length - 1].text === text && now - mine[mine.length - 1].t < 10000) {
+    return toast("같은 말을 연속으로 보낼 수 없어요.");
+  }
+  chatLastSent = now;
+  input.value = "";
+  await act((s) => G.addChat(s, myId, text));
 }
 
 // ---------- 열려 있는 방 목록 ----------
@@ -989,7 +1192,7 @@ function syncLobby() {
   if (key === lobbyKey) return;
   lobbyKey = key;
   lobbyCode = roomCode;
-  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: Date.now() }).catch(() => {});
+  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: state.createdAt || Date.now() }).catch(() => {});
 }
 
 function unpublishLobby() {
@@ -999,39 +1202,68 @@ function unpublishLobby() {
   lobbyKey = "";
 }
 
+// 목록 항목을 통째로 다시 그리지 않고, 바뀐 글자만 고쳐요 (방이 깜빡이거나 순서가 바뀌지 않게)
+const roomNodes = new Map();
+
+function roomItem(code) {
+  const li = el("li", "room-item");
+  const info = el("div", "room-info");
+  const title = el("b");
+  const meta = el("span");
+  info.append(title, meta);
+  const join = el("button", "room-join", "들어가기");
+  join.addEventListener("click", () => {
+    if (!myName()) {
+      $("name").focus();
+      return toast("이름을 먼저 써 주세요.");
+    }
+    joinRoom(code);
+  });
+  li.append(info, join);
+  return { li, title, meta };
+}
+
 function renderOpenRooms() {
   const list = $("room-list");
   if (!list) return;
   const now = Date.now();
+  // 만든 순서대로 고정 (새 방은 아래에 붙어요)
   const rooms = Object.entries(openRooms)
     .filter(([, r]) => r && r.count < (r.max || G.MAX_PLAYERS) && now - (r.ts || 0) < 3 * 60 * 60 * 1000)
-    .sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
-  if (lobbyError) {
-    list.replaceChildren(el("li", "room-empty", "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."));
-    $("code-join").open = true;
+    .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0) || a[0].localeCompare(b[0]));
+
+  const message = lobbyError
+    ? "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."
+    : rooms.length ? "" : "아직 열린 방이 없어요. 새 방을 만들어 보세요!";
+  if (lobbyError) $("code-join").open = true;
+  if (message) {
+    roomNodes.clear();
+    const empty = list.querySelector(".room-empty");
+    if (empty && list.children.length === 1) empty.textContent = message;
+    else list.replaceChildren(el("li", "room-empty", message));
     return;
   }
-  if (!rooms.length) {
-    list.replaceChildren(el("li", "room-empty", "아직 열린 방이 없어요. 새 방을 만들어 보세요!"));
-    return;
+  list.querySelector(".room-empty")?.remove();
+
+  const keep = new Set(rooms.map(([code]) => code));
+  for (const [code, node] of roomNodes) {
+    if (!keep.has(code)) {
+      node.li.remove();
+      roomNodes.delete(code);
+    }
   }
-  list.replaceChildren(
-    ...rooms.map(([code, r]) => {
-      const li = el("li", "room-item");
-      const info = el("div", "room-info");
-      info.append(el("b", "", `${r.host}의 방`), el("span", "", `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`));
-      const join = el("button", "room-join", "들어가기");
-      join.addEventListener("click", () => {
-        if (!myName()) {
-          $("name").focus();
-          return toast("이름을 먼저 써 주세요.");
-        }
-        joinRoom(code);
-      });
-      li.append(info, join);
-      return li;
-    }),
-  );
+  for (const [code, r] of rooms) {
+    let node = roomNodes.get(code);
+    if (!node) {
+      node = roomItem(code);
+      roomNodes.set(code, node);
+      list.append(node.li);
+    }
+    const title = `${r.host}의 방`;
+    const meta = `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`;
+    if (node.title.textContent !== title) node.title.textContent = title;
+    if (node.meta.textContent !== meta) node.meta.textContent = meta;
+  }
 }
 
 function renderLobby() {
@@ -1064,14 +1296,18 @@ function renderLobby() {
 
 function tileNode(tile, { showNumber, asButton }) {
   const node = el(asButton ? "button" : "div", `tile ${tile.c}`);
-  if (showNumber) {
+  if (showNumber && G.isJoker(tile)) {
+    node.classList.add("joker");
+    node.append(el("span", "joker-star", "★"));
+  } else if (showNumber) {
     // 6과 9는 뒤집어 봐도 헷갈리지 않게 밑줄
     node.append(el("span", tile.n === 6 || tile.n === 9 ? "u" : "", String(tile.n)));
   } else {
     node.classList.add("back");
   }
   const colorName = tile.c === "dark" ? "검은" : "흰";
-  node.setAttribute("aria-label", showNumber ? `${colorName} 타일 ${tile.n}` : `${colorName} 숨은 타일`);
+  const label = G.isJoker(tile) ? `${colorName} 조커` : `${colorName} 타일 ${tile.n}`;
+  node.setAttribute("aria-label", showNumber ? label : `${colorName} 숨은 타일`);
   return node;
 }
 
@@ -1121,6 +1357,9 @@ function renderGame(me) {
     const winner = state.players.find((p) => p.id === state.winnerId);
     banner.textContent = winner ? (winner.id === myId ? "내가 이겼어요!" : `${winner.name} 승리!`) : "게임 끝";
     banner.classList.add("over");
+  } else if (state.phase === "setup") {
+    banner.textContent = me.pending?.length ? "★ 조커 자리를 정해요" : "친구들이 조커 자리를 정하는 중";
+    if (me.pending?.length) banner.classList.add("my-turn");
   } else if (G.isOut(me)) {
     banner.textContent = `관전 중 · ${turnPlayer.name}의 차례`;
   } else if (myTurn) {
@@ -1189,7 +1428,9 @@ function renderGame(me) {
     }),
   );
   const drawnBox = $("drawn-box");
-  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}` : "";
+  const setupJoker = state.phase === "setup" ? me.pending?.[0] : null;
+  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}`
+    : setupJoker ? `setup-${setupJoker.c}-${me.pending.length}` : "";
   if (drawnBox.dataset.key !== drawnKey || !drawnKey) {
     drawnBox.dataset.key = drawnKey;
     drawnBox.replaceChildren();
@@ -1197,6 +1438,9 @@ function renderGame(me) {
       const mine = turnPlayer.id === myId;
       drawnBox.append(el("span", "drawn-label", mine ? "이번에 뽑은 타일" : `${turnPlayer.name} · 뽑은 타일`));
       drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
+    } else if (setupJoker) {
+      drawnBox.append(el("span", "drawn-label", "놓을 조커"));
+      drawnBox.append(tileNode(setupJoker, { showNumber: true, asButton: false }));
     } else if (state.phase !== "over" && state.deck.length === 0) {
       drawnBox.append(el("span", "drawn-label", "더미가 비었어요! 틀리면 내 타일 하나가 공개돼요."));
     }
@@ -1208,8 +1452,17 @@ function renderGame(me) {
   $("my-title").replaceChildren(avatarNode(me), el("span", "", `내 타일 (${me.name})`));
   document.querySelector("#game .me").style.setProperty("--seat", seatColor(me));
   const myHand = $("my-hand");
-  myHand.replaceChildren(
-    ...me.hand.map((tile, index) => {
+  const placing = (state.phase === "setup" && me.pending?.length) || (state.phase === "joker" && myTurn);
+  const slot = (index) => {
+    const b = el("button", "slot", "+");
+    b.setAttribute("aria-label", `${index + 1}번째 자리에 조커 놓기`);
+    b.addEventListener("click", () => {
+      sound.play("tap");
+      act((s) => G.placeJoker(s, myId, index));
+    });
+    return b;
+  };
+  const myTiles = me.hand.map((tile, index) => {
       const node = tileNode(tile, { showNumber: true, asButton: false });
       const mark = el("span", "mark", tile.open ? "공개" : "나만");
       mark.title = tile.open ? "친구들도 볼 수 있어요" : "나만 볼 수 있어요";
@@ -1219,9 +1472,10 @@ function renderGame(me) {
         node.classList.add(flash.correct ? "flash-good" : "flash-bad");
       }
       return node;
-    }),
-  );
-  playerTileNodes.set(myId, [...myHand.children]);
+    });
+  myHand.classList.toggle("placing", Boolean(placing));
+  myHand.replaceChildren(...(placing ? myTiles.flatMap((n, i) => [slot(i), n]).concat(slot(myTiles.length)) : myTiles));
+  playerTileNodes.set(myId, myTiles);
 
   // 기록
 
@@ -1265,6 +1519,18 @@ function renderPanel(me, myTurn) {
     return;
   }
 
+  if (state.phase === "setup" || state.phase === "joker") {
+    const turnPlayer = G.currentPlayer(state);
+    const mustPlace = (state.phase === "setup" && me.pending?.length) || (state.phase === "joker" && myTurn);
+    if (mustPlace) {
+      panel.append(el("p", "", "★ 조커를 놓을 자리를 골라 주세요"));
+      panel.append(el("span", "panel-hint", "내 받침대의 + 를 누르면 그 자리에 고정돼요. 조커는 어디에 놓아도 돼요."));
+    } else {
+      panel.append(el("p", "", state.phase === "setup" ? "친구들이 조커 자리를 고르는 중이에요…" : `${turnPlayer.name}이(가) 조커 자리를 고르는 중이에요…`));
+    }
+    return;
+  }
+
   if (!myTurn) return;
 
   if (state.phase === "continue") {
@@ -1298,6 +1564,16 @@ function renderPanel(me, myTurn) {
     });
     pad.append(b);
   }
+  const jokerBtn = tileNode({ n: null, c: color, j: true }, { showNumber: true, asButton: true });
+  jokerBtn.classList.add("numpad-joker");
+  jokerBtn.setAttribute("aria-label", "조커");
+  jokerBtn.addEventListener("click", () => {
+    const pick = selected;
+    selected = null;
+    sound.play("tap");
+    act((s) => G.guess(s, myId, pick.targetId, pick.index, G.JOKER));
+  });
+  pad.append(jokerBtn);
   panel.append(pad);
   const cancel = el("button", "", "다른 타일 고르기");
   cancel.style.marginTop = "10px";
@@ -1313,6 +1589,9 @@ async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
   sound.bind($("sound-toggle"));
   $("home-btn").addEventListener("click", goHome);
+  $("chat-toggle").addEventListener("click", () => setChatOpen($("chat-panel").classList.contains("hidden")));
+  $("chat-close").addEventListener("click", () => setChatOpen(false));
+  $("chat-form").addEventListener("submit", sendChat);
   $("demo-hand")?.addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();

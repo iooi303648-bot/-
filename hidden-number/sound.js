@@ -98,6 +98,7 @@ export function createSound() {
     lose() {
       [G5, E5, C5].forEach((f, i) => tone(f, i * 0.2, 0.32, { type: "triangle", gain: 0.2 }));
     },
+    chat() { tone(880, 0, 0.07, { gain: 0.12 }); tone(1320, 0.07, 0.1, { gain: 0.1 }); },
     out() {
       tone(392, 0, 0.25, { type: "triangle", gain: 0.25, to: 330 });
       tone(311, 0.25, 0.5, { type: "triangle", gain: 0.25, to: 196 });
