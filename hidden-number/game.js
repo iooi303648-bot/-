@@ -127,13 +127,32 @@ export function startGame(state, byId, rng = Math.random) {
   state.log = [];
   addLog(state, `게임 시작! 첫 차례는 ${state.players[0].name}`);
   state.drawnIndex = null;
-  if (state.players.some((p) => p.pending?.length)) {
-    // 처음 받은 조커를 놓을 자리부터 골라요
-    state.phase = "setup";
-    state.drawn = null;
-  } else {
-    beginTurn(state);
-  }
+  // 모두 '타일 확인' 단계부터. 조커가 있는 사람은 자리를 정하고, 없는 사람은 준비 완료를 눌러요.
+  // (누가 조커를 받았는지 다른 사람이 알 수 없게, 조커가 없어도 항상 이 단계를 거쳐요)
+  state.phase = "setup";
+  state.drawn = null;
+  state.players.forEach((p) => { p.ready = false; });
+  return state;
+}
+
+function allReady(state) {
+  return state.players.every((p) => p.left || (p.ready && !p.pending?.length));
+}
+
+function finishSetup(state) {
+  state.players.forEach((p) => { delete p.ready; });
+  if (isOut(currentPlayer(state))) nextTurn(state);
+  else beginTurn(state);
+}
+
+// 타일 확인 끝 (조커가 없는 사람). 조커가 있으면 다 놓아야 준비돼요.
+export function markReady(state, byId) {
+  if (state.phase !== "setup") throw new Error("지금은 준비 단계가 아니에요.");
+  const player = state.players.find((p) => p.id === byId);
+  if (!player) throw new Error("방에 없는 사람이에요.");
+  if (player.pending?.length) throw new Error("조커 자리를 먼저 정해 주세요.");
+  player.ready = true;
+  if (allReady(state)) finishSetup(state);
   return state;
 }
 
@@ -148,10 +167,8 @@ export function placeJoker(state, byId, index) {
     const tile = player.pending.shift();
     if (!player.pending.length) delete player.pending;
     player.hand.splice(at(player.hand), 0, { ...tile, open: false, fixed: true });
-    if (!state.players.some((p) => p.pending?.length)) {
-      addLog(state, "조커 자리를 모두 정했어요");
-      beginTurn(state);
-    }
+    if (!player.pending) player.ready = true; // 조커를 다 놓으면 자동으로 준비 완료
+    if (allReady(state)) finishSetup(state);
     return state;
   }
   if (state.phase === "joker") {
@@ -304,11 +321,8 @@ export function leaveGame(state, id) {
     return state;
   }
   if (state.phase === "setup") {
-    if (!state.players.some((p) => p.pending?.length && !p.left)) {
-      // 남은 사람들이 조커를 다 놓았으면 시작. 첫 차례가 나간 사람이면 다음 사람으로
-      if (isOut(currentPlayer(state))) nextTurn(state);
-      else beginTurn(state);
-    }
+    // 남은 사람들이 모두 준비됐으면 시작
+    if (allReady(state)) finishSetup(state);
     return state;
   }
   if (wasTurn) nextTurn(state);
