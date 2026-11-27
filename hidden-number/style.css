@@ -1408,3 +1408,66 @@ button.table-demo:hover:not(:disabled) { background: #c2d1b814; }
     scroll-behavior:auto!important
   }
 }
+
+/* ===== 꼬마 탐정 부엉이 ===== */
+.owl-wrap {
+  position: absolute;
+  left: 26px;
+  top: -13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+.owl {
+  width: 88px;
+  height: auto;
+  transform-origin: 50% 100%;
+  animation: owl-bob 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 3px 0 rgba(10, 30, 24, 0.25));
+}
+.owl .owl-lids {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  animation: owl-blink 4.5s infinite;
+}
+.owl .owl-glass {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  animation: owl-peek 3.2s ease-in-out infinite;
+}
+/* 부엉이 말풍선 */
+.owl-wrap .scene-note {
+  position: static;
+  margin-top: 6px;
+  padding: 6px 11px;
+  background: #fffaf0;
+  color: #2f3b33;
+  border-radius: 12px 12px 12px 3px;
+  transform: rotate(-3deg);
+  box-shadow: 0 3px 0 rgba(10, 30, 24, 0.25);
+  white-space: nowrap;
+}
+.owl-wrap .scene-note::after { display: none; }
+@keyframes owl-bob {
+  0%, 100% { transform: rotate(-3deg) translateY(0); }
+  50% { transform: rotate(3deg) translateY(-3px); }
+}
+@keyframes owl-blink {
+  0%, 92%, 100% { transform: scaleY(0); }
+  95% { transform: scaleY(1); }
+}
+@keyframes owl-peek {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(10deg); }
+}
+@media (max-width: 600px) {
+  .owl-wrap { left: 14px; top: -4px; }
+  .owl { width: 68px; }
+  .owl-wrap .scene-note { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .owl, .owl .owl-glass, .owl .owl-lids { animation: none; }
+}

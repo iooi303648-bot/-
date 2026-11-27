@@ -24,7 +24,44 @@
             <h1>쉿,<br />어떤 숫자일까?</h1>
             <p class="intro-copy">보이는 건 색깔과 순서뿐.<br />친구의 숫자를 하나씩 알아맞혀 보세요.</p>
             <div class="tile-scene" aria-hidden="true">
+              <div class="owl-wrap">
+                <svg class="owl" viewBox="0 0 120 124" aria-hidden="true">
+                <!-- 꼬마 탐정 부엉이 -->
+                <ellipse cx="58" cy="117" rx="30" ry="4" fill="#0e2a22" opacity=".35"/>
+                <path d="M30 60 Q28 30 58 28 Q88 30 86 60 L86 92 Q86 114 58 114 Q30 114 30 92 Z" fill="#8a6a4b"/>
+                <path d="M40 74 Q40 62 58 62 Q76 62 76 74 L76 94 Q76 108 58 108 Q40 108 40 94 Z" fill="#f2e7cf"/>
+                <g fill="none" stroke="#c9b48e" stroke-width="2" stroke-linecap="round">
+                  <path d="M50 80 q3 3 6 0"/><path d="M60 80 q3 3 6 0"/>
+                  <path d="M47 89 q3 3 6 0"/><path d="M56 89 q3 3 6 0"/><path d="M65 89 q3 3 6 0"/>
+                  <path d="M52 98 q3 3 6 0"/><path d="M61 98 q3 3 6 0"/>
+                </g>
+                <path d="M32 66 Q20 80 30 100 Q40 92 40 76 Z" fill="#6f5339"/>
+                <path d="M47 112 l-3 6 M51 112 l0 6 M55 112 l3 6" stroke="#e39a45" stroke-width="3" stroke-linecap="round"/>
+                <path d="M65 112 l-3 6 M69 112 l0 6 M73 112 l3 6" stroke="#e39a45" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="46" cy="50" r="13" fill="#fffaf0"/>
+                <circle cx="70" cy="50" r="13" fill="#fffaf0"/>
+                <g class="owl-eyes">
+                  <circle cx="49" cy="53" r="6.5" fill="#1f2a24"/><circle cx="73" cy="53" r="6.5" fill="#1f2a24"/>
+                  <circle cx="51" cy="50.5" r="2" fill="#fff"/><circle cx="75" cy="50.5" r="2" fill="#fff"/>
+                </g>
+                <g class="owl-lids" fill="#8a6a4b">
+                  <rect x="32" y="36" width="28" height="28" rx="14"/><rect x="56" y="36" width="28" height="28" rx="14"/>
+                </g>
+                <path d="M54 58 L58 66 L62 58 Z" fill="#e39a45"/>
+                <circle cx="38" cy="62" r="4" fill="#e8907a" opacity=".55"/>
+                <circle cx="78" cy="62" r="4" fill="#e8907a" opacity=".55"/>
+                <path d="M30 34 Q30 18 58 16 Q86 18 86 34 Q72 28 58 28 Q44 28 30 34 Z" fill="#c8603f"/>
+                <path d="M26 35 Q58 22 90 35 Q58 31 26 35 Z" fill="#a84c30"/>
+                <path d="M58 16 Q60 9 66 8" stroke="#a84c30" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <g class="owl-glass">
+                  <path d="M84 70 Q98 66 100 82 Q92 88 82 82 Z" fill="#6f5339"/>
+                  <line x1="96" y1="84" x2="104" y2="96" stroke="#5b4330" stroke-width="5" stroke-linecap="round"/>
+                  <circle cx="92" cy="76" r="11" fill="#eaf7fb" fill-opacity=".9" stroke="#d6a94a" stroke-width="3.5"/>
+                  <path d="M86 71 q3 -3 7 -2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/>
+                </g>
+              </svg>
               <div class="scene-note">분명, 이 사이에 있어.</div>
+              </div>
               <div class="hero-tiles">
                 <div class="tile light hero-first"><span>3</span><small>공개</small></div>
                 <div class="tile dark back hero-mystery"><span class="mystery-symbol">?</span></div>
@@ -87,7 +124,7 @@
         const script = document.createElement("script");
         const localFile = location.protocol === "file:";
         if (!localFile) script.type = "module";
-        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-2";
+        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-3";
         script.onerror = () => {
           const message = localFile
             ? "미리보기 파일을 읽지 못했어요. ZIP 압축을 모두 풀고 local-preview.js가 index.html과 같은 폴더에 있는지 확인해 주세요."
