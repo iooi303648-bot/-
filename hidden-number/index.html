@@ -15,7 +15,7 @@
     <main class="app">
       <header class="site-header">
         <div class="wordmark"><span class="brand-mark" aria-hidden="true"><i>?</i><i>7</i></span><span>숨은 숫자</span></div>
-        <div class="header-tools"><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
+        <div class="header-tools"><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="sound-toggle" class="motion-toggle" aria-pressed="true">소리 켜짐</button><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
       </header>
       <section id="home" class="screen home-screen" aria-label="게임 시작">
         <div class="home-layout">
@@ -77,7 +77,6 @@
         <div id="opponents" class="opponents"></div>
         <div class="turn-area"><div class="middle"><div class="board"><div class="tray" id="tray" aria-hidden="true"></div><div class="pile-text"><span class="pile-label">남은 타일</span><span id="pile-count" class="pile-count"></span></div></div><div id="drawn-box" class="drawn-box"></div></div><div id="panel" class="panel"></div></div>
         <div class="me"><h2 id="my-title" class="seat-head"></h2><div class="rack"><div id="my-hand" class="hand"></div></div></div>
-        <details class="log-box"><summary>이번 판 기록<span class="details-plus" aria-hidden="true">＋</span></summary><ul id="log"></ul></details>
       </section>
       <footer class="site-footer"><span>숨은 숫자</span><span>천천히 보고, 대담하게 맞혀요.</span></footer>
       <p id="toast" class="toast hidden" role="status"></p>
@@ -88,11 +87,11 @@
         const script = document.createElement("script");
         const localFile = location.protocol === "file:";
         if (!localFile) script.type = "module";
-        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-1";
+        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-2";
         script.onerror = () => {
           const message = localFile
             ? "미리보기 파일을 읽지 못했어요. ZIP 압축을 모두 풀고 local-preview.js가 index.html과 같은 폴더에 있는지 확인해 주세요."
-            : "게임 파일을 읽지 못했어요. app.js, game.js, net.js, motion.js, firebase-config.js가 index.html과 같은 폴더에 업로드됐는지 확인해 주세요.";
+            : "게임 파일을 읽지 못했어요. app.js, game.js, net.js, motion.js, sound.js, firebase-config.js가 index.html과 같은 폴더에 업로드됐는지 확인해 주세요.";
           document.getElementById("mode-badge").textContent = message;
           const toast = document.getElementById("toast");
           toast.textContent = message;

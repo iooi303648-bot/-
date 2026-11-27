@@ -2,9 +2,12 @@
 import * as G from "./game.js";
 import { connect } from "./net.js";
 import { createMotionController } from "./motion.js";
+import { createSound } from "./sound.js";
 
 const $ = (id) => document.getElementById(id);
 const motion = createMotionController();
+const sound = createSound();
+let soundPrev = null;
 let motionSnapshot = null;
 
 // 탭마다 고유한 '나' (새로고침해도 유지)
@@ -80,6 +83,7 @@ function watch(code) {
   if (unsubscribe) unsubscribe();
   roomCode = code;
   lastLogLength = 0;
+  soundPrev = null; // 방에 처음 들어올 때는 소리 없이 시작
   return new Promise((resolve) => {
     let first = true;
     unsubscribe = net.subscribe(code, (s) => {
@@ -166,12 +170,57 @@ async function joinRoom(code, { silent = false } = {}) {
 }
 
 // ---------- 화면 그리기 ----------
+// ---------- 효과음: 이전 상태와 비교해서 무슨 일이 생겼는지 알아내기 ----------
+function soundSummary(s) {
+  const me = s.players.find((p) => p.id === myId);
+  return {
+    phase: s.phase,
+    count: s.players.length,
+    guess: s.lastGuess ? `${JSON.stringify(s.lastGuess)}#${s.log.length}` : "",
+    draw: s.drawn ? `${s.turn}-${s.drawn.n}-${s.drawn.c}` : "",
+    turnId: s.phase === "lobby" ? null : s.players[s.turn]?.id,
+    meOut: s.phase !== "lobby" && !!me && G.isOut(me),
+  };
+}
+
+function playStateSounds(next) {
+  const prev = soundPrev;
+  const cur = soundSummary(next);
+  soundPrev = cur;
+  if (!prev) return;
+
+  let delay = 0;
+  const queue = (name) => {
+    setTimeout(() => sound.play(name), delay);
+    delay += 450;
+  };
+
+  if (cur.phase === "lobby") {
+    if (prev.phase === "lobby" && cur.count > prev.count) queue("join");
+    return;
+  }
+  if (prev.phase === "lobby") {
+    queue("start");
+    if (cur.turnId === myId) queue("myturn");
+    return;
+  }
+  if (cur.guess && cur.guess !== prev.guess) queue(next.lastGuess.correct ? "correct" : "wrong");
+  if (cur.phase === "over") {
+    if (prev.phase !== "over") queue(next.winnerId === myId ? "win" : "lose");
+    return;
+  }
+  if (cur.meOut && !prev.meOut) queue("out");
+  if (cur.draw && cur.draw !== prev.draw) queue("draw");
+  if (cur.turnId === myId && prev.turnId !== myId) queue("myturn");
+}
+
 function render() {
   if (!roomCode) return show("home");
   if (!state) {
     leaveRoom();
     return toast("방이 사라졌어요.");
   }
+  playStateSounds(state);
   const me = state.players.find((p) => p.id === myId);
   if (!me) {
     // 대기실에서 빠졌거나, 게임이 이미 시작된 방
@@ -310,6 +359,7 @@ function renderGame(me) {
           node.classList.add("pickable");
           node.addEventListener("click", () => {
             selected = { targetId: p.id, index };
+            sound.play("tap");
             renderGame(me);
             motion.point(document.querySelector("#opponents .tile.selected"));
           });
@@ -372,7 +422,6 @@ function renderGame(me) {
   playerTileNodes.set(myId, [...myHand.children]);
 
   // 기록
-  $("log").replaceChildren(...state.log.slice().reverse().map((line) => el("li", "", line)));
 
   // 뽑은 패를 제자리에 내려놓은 다음, 다음 사람의 뽑기를 연출합니다.
   const drawKey = state.drawn && state.phase !== "over"
@@ -442,6 +491,7 @@ function renderPanel(me, myTurn) {
     b.addEventListener("click", () => {
       const pick = selected;
       selected = null;
+      sound.play("tap");
       act((s) => G.guess(s, myId, pick.targetId, pick.index, n));
     });
     pad.append(b);
@@ -459,6 +509,7 @@ function renderPanel(me, myTurn) {
 // ---------- 시작 ----------
 async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
+  sound.bind($("sound-toggle"));
   $("demo-hand").addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();
