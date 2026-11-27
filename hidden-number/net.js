@@ -28,7 +28,7 @@ function guarded(fn) {
 async function firebaseBackend() {
   const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
   const { initializeApp } = await import(`${base}/firebase-app.js`);
-  const { getDatabase, ref, onValue, runTransaction } = await import(`${base}/firebase-database.js`);
+  const { getDatabase, ref, onValue, runTransaction, set, remove, onDisconnect } = await import(`${base}/firebase-database.js`);
   const db = getDatabase(initializeApp(firebaseConfig));
   const roomRef = (code) => ref(db, `rooms/${code}`);
   const decode = (raw) => (raw && raw.s ? JSON.parse(raw.s) : null);
@@ -48,6 +48,20 @@ async function firebaseBackend() {
       if (box.error) throw box.error;
       return result.committed;
     },
+    // 열려 있는 방 목록 (lobby/방번호 = { host, count, max, ts })
+    watchLobby(cb, onError) {
+      return onValue(ref(db, "lobby"), (snap) => cb(snap.val() || {}), (err) => onError && onError(err));
+    },
+    async setLobby(code, info) {
+      const r = ref(db, `lobby/${code}`);
+      if (info) {
+        await set(r, info);
+        onDisconnect(r).remove(); // 방장이 창을 닫으면 목록에서 사라짐
+      } else {
+        onDisconnect(r).cancel();
+        await remove(r);
+      }
+    },
   };
 }
 
@@ -60,7 +74,14 @@ function localBackend() {
   };
   const notify = (code) => (listeners.get(code) || []).forEach((cb) => cb(read(code)));
 
+  const LOBBY_KEY = "hidden-number-lobby";
+  let lobbyListeners = [];
+  const readLobby = () => {
+    try { return JSON.parse(localStorage.getItem(LOBBY_KEY)) || {}; } catch { return {}; }
+  };
+
   window.addEventListener("storage", (e) => {
+    if (e.key === LOBBY_KEY) { const all = readLobby(); lobbyListeners.forEach((cb) => cb(all)); return; }
     if (!e.key || !e.key.startsWith("hidden-number-room-")) return;
     notify(e.key.slice("hidden-number-room-".length));
   });
@@ -82,6 +103,18 @@ function localBackend() {
       localStorage.setItem(key(code), JSON.stringify(next));
       notify(code);
       return true;
+    },
+    watchLobby(cb) {
+      lobbyListeners.push(cb);
+      cb(readLobby());
+      return () => { lobbyListeners = lobbyListeners.filter((x) => x !== cb); };
+    },
+    async setLobby(code, info) {
+      const all = readLobby();
+      if (info) all[code] = info;
+      else delete all[code];
+      localStorage.setItem(LOBBY_KEY, JSON.stringify(all));
+      lobbyListeners.forEach((cb) => cb(all));
     },
   };
 }

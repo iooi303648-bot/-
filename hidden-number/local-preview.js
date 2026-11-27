@@ -624,7 +624,7 @@ function guarded(fn) {
 async function firebaseBackend() {
   const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
   const { initializeApp } = await import(`${base}/firebase-app.js`);
-  const { getDatabase, ref, onValue, runTransaction } = await import(`${base}/firebase-database.js`);
+  const { getDatabase, ref, onValue, runTransaction, set, remove, onDisconnect } = await import(`${base}/firebase-database.js`);
   const db = getDatabase(initializeApp(firebaseConfig));
   const roomRef = (code) => ref(db, `rooms/${code}`);
   const decode = (raw) => (raw && raw.s ? JSON.parse(raw.s) : null);
@@ -644,6 +644,20 @@ async function firebaseBackend() {
       if (box.error) throw box.error;
       return result.committed;
     },
+    // 열려 있는 방 목록 (lobby/방번호 = { host, count, max, ts })
+    watchLobby(cb, onError) {
+      return onValue(ref(db, "lobby"), (snap) => cb(snap.val() || {}), (err) => onError && onError(err));
+    },
+    async setLobby(code, info) {
+      const r = ref(db, `lobby/${code}`);
+      if (info) {
+        await set(r, info);
+        onDisconnect(r).remove(); // 방장이 창을 닫으면 목록에서 사라짐
+      } else {
+        onDisconnect(r).cancel();
+        await remove(r);
+      }
+    },
   };
 }
 
@@ -656,7 +670,14 @@ function localBackend() {
   };
   const notify = (code) => (listeners.get(code) || []).forEach((cb) => cb(read(code)));
 
+  const LOBBY_KEY = "hidden-number-lobby";
+  let lobbyListeners = [];
+  const readLobby = () => {
+    try { return JSON.parse(localStorage.getItem(LOBBY_KEY)) || {}; } catch { return {}; }
+  };
+
   window.addEventListener("storage", (e) => {
+    if (e.key === LOBBY_KEY) { const all = readLobby(); lobbyListeners.forEach((cb) => cb(all)); return; }
     if (!e.key || !e.key.startsWith("hidden-number-room-")) return;
     notify(e.key.slice("hidden-number-room-".length));
   });
@@ -678,6 +699,18 @@ function localBackend() {
       localStorage.setItem(key(code), JSON.stringify(next));
       notify(code);
       return true;
+    },
+    watchLobby(cb) {
+      lobbyListeners.push(cb);
+      cb(readLobby());
+      return () => { lobbyListeners = lobbyListeners.filter((x) => x !== cb); };
+    },
+    async setLobby(code, info) {
+      const all = readLobby();
+      if (info) all[code] = info;
+      else delete all[code];
+      localStorage.setItem(LOBBY_KEY, JSON.stringify(all));
+      lobbyListeners.forEach((cb) => cb(all));
     },
   };
 }
@@ -790,6 +823,7 @@ function watch(code) {
 }
 
 function leaveRoom() {
+  unpublishLobby();
   if (unsubscribe) unsubscribe();
   unsubscribe = null;
   roomCode = null;
@@ -804,6 +838,7 @@ async function goHome() {
   const me = state?.players.find((p) => p.id === myId);
   const playing = state && (state.phase === "guess" || state.phase === "continue") && me && !G.isOut(me);
   if (playing && !window.confirm("게임을 그만두고 처음 화면으로 갈까요?\n그만두면 내 타일이 모두 공개되고 탈락해요.")) return;
+  unpublishLobby(); // 새 방장이 다시 올리기 전에 내 목록을 먼저 내림
   if (state) await act((s) => G.leaveGame(s, myId));
   leaveRoom();
 }
@@ -930,8 +965,73 @@ function render() {
     leaveRoom();
     return toast("이미 게임이 시작된 방이에요.");
   }
+  syncLobby();
   if (state.phase === "lobby") renderLobby();
   else renderGame(me);
+}
+
+// ---------- 열려 있는 방 목록 ----------
+// 방장만 목록에 자기 방을 올리고, 게임이 시작되거나 꽉 차면 내린다.
+let lobbyKey = "";
+let lobbyCode = null;
+let openRooms = {};
+let lobbyError = false;
+
+function syncLobby() {
+  if (!net?.setLobby || !roomCode || !state) return;
+  const host = state.players.find((p) => p.id === state.hostId);
+  const open = state.hostId === myId && state.phase === "lobby" && state.players.length < G.MAX_PLAYERS && host;
+  if (!open) {
+    if (lobbyCode === roomCode) unpublishLobby();
+    return;
+  }
+  const key = `${roomCode}|${host.name}|${state.players.length}`;
+  if (key === lobbyKey) return;
+  lobbyKey = key;
+  lobbyCode = roomCode;
+  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: Date.now() }).catch(() => {});
+}
+
+function unpublishLobby() {
+  if (!lobbyCode || !net?.setLobby) return;
+  net.setLobby(lobbyCode, null).catch(() => {});
+  lobbyCode = null;
+  lobbyKey = "";
+}
+
+function renderOpenRooms() {
+  const list = $("room-list");
+  if (!list) return;
+  const now = Date.now();
+  const rooms = Object.entries(openRooms)
+    .filter(([, r]) => r && r.count < (r.max || G.MAX_PLAYERS) && now - (r.ts || 0) < 3 * 60 * 60 * 1000)
+    .sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
+  if (lobbyError) {
+    list.replaceChildren(el("li", "room-empty", "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."));
+    $("code-join").open = true;
+    return;
+  }
+  if (!rooms.length) {
+    list.replaceChildren(el("li", "room-empty", "아직 열린 방이 없어요. 새 방을 만들어 보세요!"));
+    return;
+  }
+  list.replaceChildren(
+    ...rooms.map(([code, r]) => {
+      const li = el("li", "room-item");
+      const info = el("div", "room-info");
+      info.append(el("b", "", `${r.host}의 방`), el("span", "", `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`));
+      const join = el("button", "room-join", "들어가기");
+      join.addEventListener("click", () => {
+        if (!myName()) {
+          $("name").focus();
+          return toast("이름을 먼저 써 주세요.");
+        }
+        joinRoom(code);
+      });
+      li.append(info, join);
+      return li;
+    }),
+  );
 }
 
 function renderLobby() {
@@ -1235,11 +1335,20 @@ async function main() {
   });
   $("start").addEventListener("click", () => act((s) => G.startGame(s, myId)));
   $("leave").addEventListener("click", async () => {
+    unpublishLobby();
     if (roomCode) await act((s) => G.leaveGame(s, myId));
     leaveRoom();
   });
   $("create").disabled = false;
   $("join").disabled = false;
+
+  // 열려 있는 방 목록 받아 오기
+  if (net.watchLobby) {
+    net.watchLobby(
+      (all) => { openRooms = all; lobbyError = false; renderOpenRooms(); },
+      () => { lobbyError = true; renderOpenRooms(); },
+    );
+  }
 
   // 새로고침했을 때 하던 방으로 돌아가기
   const savedRoom = storageGet("hn-room");
