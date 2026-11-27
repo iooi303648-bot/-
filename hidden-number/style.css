@@ -1573,3 +1573,27 @@ body {
 .home-screen { border-color: transparent; box-shadow: 0 2px 0 rgba(0, 0, 0, .12), 0 22px 44px rgba(30, 15, 5, .45); }
 .lobby-screen, .game-screen { box-shadow: 0 2px 0 rgba(0, 0, 0, .15), 0 22px 44px rgba(30, 15, 5, .45); }
 .owl-wrap .scene-note { background: #ffffff; }
+
+/* ===== 둥근 글씨체 ===== */
+/* 본문: 고운돋움, 제목·버튼·숫자: 주아 */
+:root {
+  font-family: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --round: "Jua", "Gowun Dodum", "Apple SD Gothic Neo", sans-serif;
+  --num-font: "Jua", "Gowun Dodum", sans-serif;
+}
+h1, h2, h3,
+.intro h1, .lobby-screen h1,
+button, .banner, .badge,
+label, .field,
+b, strong,
+.seat-name, .seat-info,
+.scene-note, .hero-tiles .mystery-symbol, .table-label,
+.panel p, .drawn-label, .pile-label,
+.quick-guide b, .lobby-list-heading h2, .player-list li,
+.game-facts, .hint, .sub, .toast {
+  font-family: var(--round);
+  font-weight: 400;
+}
+.intro h1, .lobby-screen h1 { letter-spacing: -1px; }
+.tile, .tile span, .numpad .tile, .room-code .tile { font-family: var(--num-font); font-weight: 400; }
+input, input::placeholder { font-family: "Gowun Dodum", sans-serif; }
