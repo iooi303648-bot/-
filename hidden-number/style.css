@@ -1597,3 +1597,62 @@ b, strong,
 .intro h1, .lobby-screen h1 { letter-spacing: -1px; }
 .tile, .tile span, .numpad .tile, .room-code .tile { font-family: var(--num-font); font-weight: 400; }
 input, input::placeholder { font-family: "Gowun Dodum", sans-serif; }
+
+/* ===== 첫 화면 오른쪽·아래: 허연 흰색 대신 짙은 초록 펠트 ===== */
+.home-screen {
+  background:
+    var(--grain-light),
+    var(--grain-dark),
+    #173a31;
+  color: #eef1e8;
+}
+.entry-card {
+  background:
+    radial-gradient(ellipse 90% 70% at 30% 20%, rgba(255, 255, 255, .04), transparent 70%);
+  border-left: 1px solid rgba(0, 0, 0, .25);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, .05);
+}
+.entry-heading h2 { color: #ffffff; }
+.field { color: #dfe6da; }
+.entry-card input {
+  background: #ffffff;
+  border-color: transparent;
+  color: #22302a;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, .12), 0 1px 0 rgba(255, 255, 255, .06);
+}
+.divider { color: #9fb2a6; }
+.divider::before, .divider::after { background: rgba(255, 255, 255, .14); }
+.badge { color: #b9c8bd; border-top-color: rgba(255, 255, 255, .12); }
+.badge.online::before { background: #7fd39b; box-shadow: 0 0 0 3px rgba(127, 211, 155, .18); }
+.join-row button {
+  background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .22);
+  color: #ffffff;
+}
+.join-row button:hover:not(:disabled) { background: rgba(255, 255, 255, .2); }
+
+.quick-guide {
+  background: rgba(0, 0, 0, .16);
+  border-top: 1px solid rgba(0, 0, 0, .3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.quick-guide b { color: #ffffff; }
+.quick-guide p > span { color: #a9bbb0; }
+.guide-symbol { border-color: rgba(255, 255, 255, .25); color: #f0c24b; background: rgba(255, 255, 255, .04); }
+.guide-target::before { border-color: #f0c24b !important; box-shadow: inset 0 0 0 4px #173a31 !important; background: #f0c24b; }
+.rules { border-top-color: rgba(255, 255, 255, .08); background: rgba(0, 0, 0, .22); }
+.rules summary { color: #c4d1c8; }
+.rules ol { color: #c4d1c8; }
+
+/* ===== 주황 버튼 → 겨자색 게임 버튼 ===== */
+button.primary {
+  background: linear-gradient(180deg, #f6cd5c, #ecb93a);
+  border-color: #d9a52a;
+  color: #2c2208;
+  box-shadow: 0 3px 0 #b5861c, 0 6px 14px rgba(0, 0, 0, .2);
+}
+button.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f8d470, #efc14a);
+  border-color: #d9a52a;
+}
+button.primary:active:not(:disabled) { box-shadow: 0 1px 0 #b5861c; }
