@@ -1,9 +1,9 @@
 // 숨은 숫자 — 화면과 버튼을 연결하는 코드
-import * as G from "./game.js?v=20261127-0321";
-import { connect } from "./net.js?v=20261127-0321";
-import { createMotionController } from "./motion.js?v=20261127-0321";
-import { cleanText } from "./chat-filter.js?v=20261127-0321";
-import { createSound } from "./sound.js?v=20261127-0321";
+import * as G from "./game.js?v=20261127-0331";
+import { connect } from "./net.js?v=20261127-0331";
+import { createMotionController } from "./motion.js?v=20261127-0331";
+import { cleanText } from "./chat-filter.js?v=20261127-0331";
+import { createSound } from "./sound.js?v=20261127-0331";
 
 const $ = (id) => document.getElementById(id);
 const motion = createMotionController();
@@ -521,8 +521,9 @@ function renderGame(me) {
     banner.textContent = winner ? (winner.id === myId ? "내가 이겼어요!" : `${winner.name} 승리!`) : "게임 끝";
     banner.classList.add("over");
   } else if (state.phase === "setup") {
-    banner.textContent = me.pending?.length ? "★ 조커 자리를 정해요" : "친구들이 조커 자리를 정하는 중";
-    if (me.pending?.length) banner.classList.add("my-turn");
+    // 누가 조커를 받았는지 드러나지 않게 모두 같은 '타일 확인' 안내
+    banner.textContent = "내 타일을 확인해요";
+    if (!me.ready) banner.classList.add("my-turn");
   } else if (G.isOut(me)) {
     banner.textContent = `관전 중 · ${turnPlayer.name}의 차례`;
   } else if (myTurn) {
@@ -531,6 +532,12 @@ function renderGame(me) {
   } else {
     banner.textContent = `${turnPlayer.name}의 차례`;
   }
+
+  // 다른 사람이 뽑아서 이미 받침대에 놓은 조커는, 그 차례가 끝날 때까지 내 화면에선
+  // 평소처럼 '뽑은 타일' 자리에 둬요. (일찍 받침대로 옮겨지면 조커인 게 티 나니까)
+  const inPlay = state.phase === "guess" || state.phase === "continue";
+  const hideIndex = inPlay && state.drawnIndex != null && turnPlayer.id !== myId ? state.drawnIndex : -1;
+  const shownDrawn = state.drawn || (hideIndex >= 0 ? turnPlayer.hand[hideIndex] : null);
 
   // 친구들 (내 다음 차례부터 순서대로)
   const myIndex = state.players.findIndex((p) => p.id === myId);
@@ -545,7 +552,8 @@ function renderGame(me) {
       const out = G.isOut(p);
       if (out) box.classList.add("out");
       const head = el("div", "seat-head");
-      const hiddenCount = p.hand.filter((t) => !t.open).length;
+      const skip = p.id === turnPlayer.id ? hideIndex : -1;
+      const hiddenCount = p.hand.filter((t, i) => !t.open && i !== skip).length;
       const nameBox = el("div");
       const thinking = p.id === turnPlayer.id && state.phase !== "over" ? " · 생각 중" : "";
       nameBox.append(
@@ -555,9 +563,12 @@ function renderGame(me) {
       head.append(avatarNode(p), nameBox);
       box.append(head);
       const hand = el("div", "hand");
+      const byIndex = [];
       p.hand.forEach((tile, index) => {
+        if (index === skip) return;
         const pickable = canPick && !tile.open && !out;
         const node = tileNode(tile, { showNumber: tile.open || state.phase === "over", asButton: pickable });
+        node.dataset.index = index;
         if (tile.open) node.classList.add("revealed");
         if (pickable) {
           node.classList.add("pickable");
@@ -575,7 +586,8 @@ function renderGame(me) {
         hand.append(node);
       });
       box.append(rackNode(hand));
-      playerTileNodes.set(p.id, [...hand.children]);
+      [...hand.children].forEach((node) => { byIndex[Number(node.dataset.index)] = node; });
+      playerTileNodes.set(p.id, byIndex);
       return box;
     }),
   );
@@ -592,15 +604,15 @@ function renderGame(me) {
   );
   const drawnBox = $("drawn-box");
   const setupJoker = state.phase === "setup" ? me.pending?.[0] : null;
-  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}`
+  const drawnKey = shownDrawn ? `${state.turn}-${shownDrawn.n}-${shownDrawn.c}-${state.phase === "over"}`
     : setupJoker ? `setup-${setupJoker.c}-${me.pending.length}` : "";
   if (drawnBox.dataset.key !== drawnKey || !drawnKey) {
     drawnBox.dataset.key = drawnKey;
     drawnBox.replaceChildren();
-    if (state.drawn && state.phase !== "over") {
+    if (shownDrawn && state.phase !== "over") {
       const mine = turnPlayer.id === myId;
       drawnBox.append(el("span", "drawn-label", mine ? "이번에 뽑은 타일" : `${turnPlayer.name} · 뽑은 타일`));
-      drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
+      drawnBox.append(tileNode(shownDrawn, { showNumber: mine, asButton: false }));
     } else if (setupJoker) {
       drawnBox.append(el("span", "drawn-label", "놓을 조커"));
       drawnBox.append(tileNode(setupJoker, { showNumber: true, asButton: false }));
@@ -643,8 +655,8 @@ function renderGame(me) {
   // 기록
 
   // 뽑은 패를 제자리에 내려놓은 다음, 다음 사람의 뽑기를 연출합니다.
-  const drawKey = state.drawn && state.phase !== "over"
-    ? `${roomCode}-${turnPlayer.id}-${state.drawn.n}-${state.drawn.c}` : "";
+  const drawKey = shownDrawn && state.phase !== "over"
+    ? `${roomCode}-${turnPlayer.id}-${shownDrawn.n}-${shownDrawn.c}` : "";
   const old = motionSnapshot;
   const steps = [];
   if (old && old.room === roomCode && old.key !== drawKey && old.drawn) {
@@ -658,7 +670,7 @@ function renderGame(me) {
   if (drawKey && old?.key !== drawKey) {
     steps.push({ kind: "carry", from: $("tray"), to: $("drawn-box").lastElementChild, mine: myTurn });
   }
-  motionSnapshot = { room: roomCode, key: drawKey, playerId: turnPlayer.id, drawn: state.drawn ? { ...state.drawn } : null };
+  motionSnapshot = { room: roomCode, key: drawKey, playerId: turnPlayer.id, drawn: shownDrawn ? { ...shownDrawn } : null };
   if (steps.length) motion.play(steps);
 }
 
@@ -683,14 +695,21 @@ function renderPanel(me, myTurn) {
   }
 
   if (state.phase === "setup" || state.phase === "joker") {
-    const turnPlayer = G.currentPlayer(state);
     const mustPlace = (state.phase === "setup" && me.pending?.length) || (state.phase === "joker" && myTurn);
     if (mustPlace) {
       panel.append(el("p", "", "★ 조커를 놓을 자리를 골라 주세요"));
       panel.append(el("span", "panel-hint", "내 받침대의 + 를 누르면 그 자리에 고정돼요. 조커는 어디에 놓아도 돼요."));
-    } else {
-      panel.append(el("p", "", state.phase === "setup" ? "친구들이 조커 자리를 고르는 중이에요…" : `${turnPlayer.name}이(가) 조커 자리를 고르는 중이에요…`));
+    } else if (state.phase === "setup" && !me.ready) {
+      panel.append(el("p", "", "내 타일을 확인했으면 준비 완료를 눌러요"));
+      const ready = el("button", "primary", "준비 완료");
+      ready.addEventListener("click", () => act((s) => G.markReady(s, myId)));
+      panel.append(ready);
+    } else if (state.phase === "setup") {
+      const live = state.players.filter((p) => !p.left);
+      const done = live.filter((p) => p.ready && !p.pending?.length).length;
+      panel.append(el("p", "", `친구들을 기다리는 중이에요… (${done}/${live.length} 준비)`));
     }
+    // 다른 사람이 조커를 뽑은 경우(joker 단계)는 평소 차례와 똑같이 아무것도 안 보여 줘요
     return;
   }
 

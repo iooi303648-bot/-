@@ -2,7 +2,7 @@
 // - firebase-config.js 가 채워져 있으면: Firebase 실시간 데이터베이스 (여러 크롬북용)
 // - 비어 있으면: 연습 모드 (한 컴퓨터의 여러 탭끼리만 연결)
 
-import { firebaseConfig } from "./firebase-config.js?v=20261127-0321";
+import { firebaseConfig } from "./firebase-config.js?v=20261127-0331";
 
 const FIREBASE_VERSION = "10.12.2";
 
