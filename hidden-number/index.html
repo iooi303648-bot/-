@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#234d42" />
     <meta name="description" content="흑백 타일 사이에 숨은 숫자를 찾아보세요. 친구와 함께하는 2~4인 숫자 추리 게임." />
-    <title>숨은 숫자 · 함께하는 숫자 추리 게임</title>
+    <title>숫자 추리 게임</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -14,7 +14,7 @@
   <body>
     <main class="app">
       <header class="site-header">
-        <div class="wordmark"><span class="brand-mark" aria-hidden="true"><i>?</i><i>7</i></span><span>숨은 숫자</span></div>
+        <div class="wordmark"><span class="brand-mark" aria-hidden="true"><i>?</i><i>7</i></span></div>
         <div class="header-tools"><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="sound-toggle" class="motion-toggle" aria-pressed="true">소리 켜짐</button><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
       </header>
       <section id="home" class="screen home-screen" aria-label="게임 시작">
@@ -73,12 +73,12 @@
         <div class="lobby-paper"><div class="lobby-list-heading"><h2>함께할 친구들</h2><span>최대 4명</span></div><ul id="lobby-players" class="player-list"></ul><p id="lobby-hint" class="hint" role="status"></p><div class="row"><button id="start" class="primary hidden">게임 시작</button><button id="leave" class="quiet">나가기</button></div></div>
       </section>
       <section id="game" class="screen game-screen hidden" aria-label="게임판">
-        <div class="game-topline"><span class="table-label">숨은 숫자</span><div id="banner" class="banner" role="status"></div></div>
+        <div class="game-topline"><div id="banner" class="banner" role="status"></div></div>
         <div id="opponents" class="opponents"></div>
         <div class="turn-area"><div class="middle"><div class="board"><div class="tray" id="tray" aria-hidden="true"></div><div class="pile-text"><span class="pile-label">남은 타일</span><span id="pile-count" class="pile-count"></span></div></div><div id="drawn-box" class="drawn-box"></div></div><div id="panel" class="panel"></div></div>
         <div class="me"><h2 id="my-title" class="seat-head"></h2><div class="rack"><div id="my-hand" class="hand"></div></div></div>
       </section>
-      <footer class="site-footer"><span>숨은 숫자</span><span>천천히 보고, 대담하게 맞혀요.</span></footer>
+      <footer class="site-footer"><span>천천히 보고, 대담하게 맞혀요.</span></footer>
       <p id="toast" class="toast hidden" role="status"></p>
     </main>
     <script>
