@@ -1850,3 +1850,49 @@ button.table-demo { border-radius: 999px; }
   .rules { margin: 0 10px 10px; }
   .entry-card { padding: 28px 22px 22px; }
 }
+
+/* ===== 첫 화면: 로그인 화면처럼 가운데 카드 하나 ===== */
+.home-screen.login {
+  max-width: 440px;
+  margin: 2vh auto 40px;
+  position: relative;
+}
+.home-screen.login::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1.5px dashed rgba(240, 232, 205, .22);
+  border-radius: calc(var(--r-mat) - 10px);
+  pointer-events: none;
+}
+.login .home-layout {
+  grid-template-columns: 1fr;
+  padding: 0;
+  gap: 0;
+}
+.login .intro {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 40px 30px 0;
+  overflow: visible;
+}
+.login .intro::before { display: none; }
+.login .tile-scene {
+  max-width: 330px;
+  height: 172px;
+  margin: 12px auto 0;
+}
+.login .entry-card {
+  margin: 0;
+  padding: 18px 34px 34px;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+.login .badge { margin: 18px auto 0; }
+@media (max-width: 720px) {
+  .home-screen.login { margin-top: 0; }
+  .login .intro { padding: 34px 20px 0; }
+  .login .entry-card { padding: 16px 24px 28px; }
+}

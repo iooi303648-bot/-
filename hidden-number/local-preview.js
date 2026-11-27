@@ -1213,7 +1213,7 @@ async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
   sound.bind($("sound-toggle"));
   $("home-btn").addEventListener("click", goHome);
-  $("demo-hand").addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
+  $("demo-hand")?.addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();
 
