@@ -70,7 +70,22 @@ function createRoom(hostId, hostName) {
     lastGuess: null,
     winnerId: null,
     log: [],
+    chat: [],
+    createdAt: Date.now(),
   };
+}
+
+// 채팅 한 줄 추가 (최근 40개만 보관). 글 다듬기·비속어 가리기는 보내는 쪽에서 해요.
+const CHAT_KEEP = 40;
+function addChat(state, id, text) {
+  const player = state.players.find((p) => p.id === id);
+  if (!player) throw new Error("방에 있는 사람만 채팅할 수 있어요.");
+  const clean = String(text ?? "").trim().slice(0, 60);
+  if (!clean) throw new Error("메시지를 써 주세요.");
+  const chat = Array.isArray(state.chat) ? state.chat : [];
+  chat.push({ id, name: player.name, text: clean, t: Date.now() });
+  state.chat = chat.slice(-CHAT_KEEP);
+  return state;
 }
 
 function addPlayer(state, id, name) {
@@ -252,7 +267,7 @@ function backToLobby(state, byId) {
   return state;
 }
 
-return { MAX_NUMBER, MIN_PLAYERS, MAX_PLAYERS, compareTiles, isOut, createRoom, addPlayer, removePlayer, startGame, currentPlayer, guess, stop, keepGoing, leaveGame, backToLobby };
+return { MAX_NUMBER, MIN_PLAYERS, MAX_PLAYERS, compareTiles, isOut, createRoom, CHAT_KEEP, addChat, addPlayer, removePlayer, startGame, currentPlayer, guess, stop, keepGoing, leaveGame, backToLobby };
 })();
 const firebaseConfig = {};
 // 손과 타일은 화면 위에서만 움직입니다. 게임 상태나 버튼 입력은 기다리지 않습니다.
@@ -563,6 +578,7 @@ function createSound() {
     lose() {
       [G5, E5, C5].forEach((f, i) => tone(f, i * 0.2, 0.32, { type: "triangle", gain: 0.2 }));
     },
+    chat() { tone(880, 0, 0.07, { gain: 0.12 }); tone(1320, 0.07, 0.1, { gain: 0.1 }); },
     out() {
       tone(392, 0, 0.25, { type: "triangle", gain: 0.25, to: 330 });
       tone(311, 0.25, 0.5, { type: "triangle", gain: 0.25, to: 196 });
@@ -593,6 +609,37 @@ function createSound() {
       sync();
     },
   };
+}
+
+// 채팅 비속어 가리기
+// 흔한 욕설을 *** 로 바꿔요. 글자 사이에 띄어쓰기·숫자·기호를 넣어도 잡아요 (예: "시 1 발").
+// 모든 나쁜 말을 막을 수는 없어요. 단어를 더 막고 싶으면 아래 목록에 추가하세요.
+const BAD_WORDS = [
+  "시발", "씨발", "씨빨", "씨바", "시바", "ㅅㅂ", "ㅆㅂ", "ㅅ ㅂ", "십새", "씹",
+  "병신", "븅신", "빙신", "ㅂㅅ",
+  "개새끼", "개새기", "새끼야", "새기야", "ㅅㄲ",
+  "지랄", "ㅈㄹ", "좆", "존나", "졸라", "ㅈㄴ", "좃",
+  "미친놈", "미친년", "미친새", "ㅁㅊ",
+  "닥쳐", "꺼져", "엿먹", "썅", "쌍놈", "염병", "엠창", "니애미", "느금", "애미", "애비",
+  "또라이", "찐따", "등신",
+  "fuck", "shit", "bitch", "damn",
+];
+
+const escape = (ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// 글자 사이에 공백·숫자·기호가 끼어 있어도 잡도록
+const GAP = "[\\s\\d_\\-.,!?~*^'\"`·•/\\\\]*";
+const PATTERNS = BAD_WORDS
+  .map((w) => w.replace(/\s/g, ""))
+  .filter(Boolean)
+  .sort((a, b) => b.length - a.length)
+  .map((w) => new RegExp([...w].map(escape).join(GAP), "gi"));
+
+const CHAT_MAX = 60;
+
+function cleanText(text) {
+  let out = String(text ?? "").replace(/\s+/g, " ").trim().slice(0, CHAT_MAX);
+  for (const re of PATTERNS) out = out.replace(re, (m) => "*".repeat(Math.min(m.length, 6)));
+  return out;
 }
 
 // 게임 방 상태를 여러 기기가 함께 보도록 연결하는 부분.
@@ -761,17 +808,18 @@ let selectedTurnKey = "";
 
 // ---------- 작은 도우미 ----------
 let toastTimer = null;
-function toast(message) {
+function toast(message, duration = 2600) {
   const el = $("toast");
   el.textContent = message;
   el.classList.remove("hidden");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add("hidden"), 2600);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), duration);
 }
 
 let activeScreen = null;
 function show(screenId) {
   $("home-btn")?.classList.toggle("hidden", screenId === "home");
+  $("chat")?.classList.toggle("hidden", screenId === "home");
   for (const id of ["home", "lobby", "game"]) $(id).classList.toggle("hidden", id !== screenId);
   if (activeScreen !== screenId) {
     motion.cancel();
@@ -809,6 +857,7 @@ function watch(code) {
   roomCode = code;
   lastLogLength = 0;
   soundPrev = null; // 방에 처음 들어올 때는 소리 없이 시작
+  resetChat();
   return new Promise((resolve) => {
     let first = true;
     unsubscribe = net.subscribe(code, (s) => {
@@ -937,6 +986,10 @@ function playStateSounds(next) {
     return;
   }
   if (prev.phase === "lobby") {
+    // 순서는 게임 시작 때 무작위로 섞여요. 모두에게 알려 주기
+    const order = next.players.map((p) => (p.id === myId ? `${p.name}(나)` : p.name)).join(" → ");
+    const first = next.players[next.turn];
+    toast(`🎲 순서를 섞었어요! ${first.id === myId ? "내가" : first.name + "이(가)"} 먼저 해요\n${order}`, 4500);
     queue("start");
     if (cur.turnId === myId) queue("myturn");
     return;
@@ -968,6 +1021,89 @@ function render() {
   syncLobby();
   if (state.phase === "lobby") renderLobby();
   else renderGame(me);
+  renderChat();
+}
+
+// ---------- 채팅 ----------
+let chatSeen = -1;      // 지금까지 본 마지막 메시지 시각 (-1: 아직 처음)
+let chatUnread = 0;
+let chatLastSent = 0;
+let peekTimer = null;
+
+function resetChat() {
+  chatSeen = -1;
+  chatUnread = 0;
+  $("chat-list")?.replaceChildren();
+  setChatOpen(false);
+  updateUnread();
+}
+
+function setChatOpen(open) {
+  $("chat-panel").classList.toggle("hidden", !open);
+  $("chat-toggle").setAttribute("aria-expanded", String(open));
+  if (open) {
+    chatUnread = 0;
+    updateUnread();
+    $("chat-peek").classList.add("hidden");
+    const list = $("chat-list");
+    list.scrollTop = list.scrollHeight;
+    setTimeout(() => $("chat-input").focus(), 30);
+  }
+}
+
+function updateUnread() {
+  const badge = $("chat-unread");
+  badge.textContent = chatUnread > 9 ? "9+" : String(chatUnread);
+  badge.classList.toggle("hidden", chatUnread === 0);
+}
+
+function renderChat() {
+  const chat = Array.isArray(state?.chat) ? state.chat : [];
+  const list = $("chat-list");
+  const open = !$("chat-panel").classList.contains("hidden");
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  const fresh = chatSeen < 0 ? [] : chat.filter((m) => m.t > chatSeen && m.id !== myId);
+
+  list.replaceChildren(
+    ...(chat.length ? chat.map((m) => {
+      const li = el("li", m.id === myId ? "chat-msg mine" : "chat-msg");
+      if (m.id !== myId) li.append(el("span", "chat-name", m.name));
+      li.append(el("span", "chat-text", cleanText(m.text)));
+      return li;
+    }) : [el("li", "chat-empty", "아직 메시지가 없어요. 인사해 볼까요?")]),
+  );
+  if (open ? atBottom || fresh.length : true) list.scrollTop = list.scrollHeight;
+
+  if (fresh.length) {
+    sound.play("chat");
+    if (!open) {
+      chatUnread += fresh.length;
+      updateUnread();
+      const last = fresh[fresh.length - 1];
+      const peek = $("chat-peek");
+      peek.textContent = `${last.name}: ${cleanText(last.text)}`;
+      peek.classList.remove("hidden");
+      clearTimeout(peekTimer);
+      peekTimer = setTimeout(() => peek.classList.add("hidden"), 3500);
+    }
+  }
+  chatSeen = chat.length ? chat[chat.length - 1].t : 0;
+}
+
+async function sendChat(event) {
+  event.preventDefault();
+  const input = $("chat-input");
+  const text = cleanText(input.value);
+  if (!text || !roomCode) return;
+  const now = Date.now();
+  if (now - chatLastSent < 1500) return toast("조금 천천히 보내 주세요.");
+  const mine = (state?.chat || []).filter((m) => m.id === myId);
+  if (mine.length && mine[mine.length - 1].text === text && now - mine[mine.length - 1].t < 10000) {
+    return toast("같은 말을 연속으로 보낼 수 없어요.");
+  }
+  chatLastSent = now;
+  input.value = "";
+  await act((s) => G.addChat(s, myId, text));
 }
 
 // ---------- 열려 있는 방 목록 ----------
@@ -989,7 +1125,7 @@ function syncLobby() {
   if (key === lobbyKey) return;
   lobbyKey = key;
   lobbyCode = roomCode;
-  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: Date.now() }).catch(() => {});
+  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: state.createdAt || Date.now() }).catch(() => {});
 }
 
 function unpublishLobby() {
@@ -999,39 +1135,68 @@ function unpublishLobby() {
   lobbyKey = "";
 }
 
+// 목록 항목을 통째로 다시 그리지 않고, 바뀐 글자만 고쳐요 (방이 깜빡이거나 순서가 바뀌지 않게)
+const roomNodes = new Map();
+
+function roomItem(code) {
+  const li = el("li", "room-item");
+  const info = el("div", "room-info");
+  const title = el("b");
+  const meta = el("span");
+  info.append(title, meta);
+  const join = el("button", "room-join", "들어가기");
+  join.addEventListener("click", () => {
+    if (!myName()) {
+      $("name").focus();
+      return toast("이름을 먼저 써 주세요.");
+    }
+    joinRoom(code);
+  });
+  li.append(info, join);
+  return { li, title, meta };
+}
+
 function renderOpenRooms() {
   const list = $("room-list");
   if (!list) return;
   const now = Date.now();
+  // 만든 순서대로 고정 (새 방은 아래에 붙어요)
   const rooms = Object.entries(openRooms)
     .filter(([, r]) => r && r.count < (r.max || G.MAX_PLAYERS) && now - (r.ts || 0) < 3 * 60 * 60 * 1000)
-    .sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
-  if (lobbyError) {
-    list.replaceChildren(el("li", "room-empty", "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."));
-    $("code-join").open = true;
+    .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0) || a[0].localeCompare(b[0]));
+
+  const message = lobbyError
+    ? "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."
+    : rooms.length ? "" : "아직 열린 방이 없어요. 새 방을 만들어 보세요!";
+  if (lobbyError) $("code-join").open = true;
+  if (message) {
+    roomNodes.clear();
+    const empty = list.querySelector(".room-empty");
+    if (empty && list.children.length === 1) empty.textContent = message;
+    else list.replaceChildren(el("li", "room-empty", message));
     return;
   }
-  if (!rooms.length) {
-    list.replaceChildren(el("li", "room-empty", "아직 열린 방이 없어요. 새 방을 만들어 보세요!"));
-    return;
+  list.querySelector(".room-empty")?.remove();
+
+  const keep = new Set(rooms.map(([code]) => code));
+  for (const [code, node] of roomNodes) {
+    if (!keep.has(code)) {
+      node.li.remove();
+      roomNodes.delete(code);
+    }
   }
-  list.replaceChildren(
-    ...rooms.map(([code, r]) => {
-      const li = el("li", "room-item");
-      const info = el("div", "room-info");
-      info.append(el("b", "", `${r.host}의 방`), el("span", "", `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`));
-      const join = el("button", "room-join", "들어가기");
-      join.addEventListener("click", () => {
-        if (!myName()) {
-          $("name").focus();
-          return toast("이름을 먼저 써 주세요.");
-        }
-        joinRoom(code);
-      });
-      li.append(info, join);
-      return li;
-    }),
-  );
+  for (const [code, r] of rooms) {
+    let node = roomNodes.get(code);
+    if (!node) {
+      node = roomItem(code);
+      roomNodes.set(code, node);
+      list.append(node.li);
+    }
+    const title = `${r.host}의 방`;
+    const meta = `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`;
+    if (node.title.textContent !== title) node.title.textContent = title;
+    if (node.meta.textContent !== meta) node.meta.textContent = meta;
+  }
 }
 
 function renderLobby() {
@@ -1313,6 +1478,9 @@ async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
   sound.bind($("sound-toggle"));
   $("home-btn").addEventListener("click", goHome);
+  $("chat-toggle").addEventListener("click", () => setChatOpen($("chat-panel").classList.contains("hidden")));
+  $("chat-close").addEventListener("click", () => setChatOpen(false));
+  $("chat-form").addEventListener("submit", sendChat);
   $("demo-hand")?.addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();

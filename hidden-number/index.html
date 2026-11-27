@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=20261127-0258" />
+    <link rel="stylesheet" href="style.css?v=20261127-0317" />
   </head>
   <body>
     <main class="app">
@@ -96,6 +96,18 @@
       </section>
       
       <p id="toast" class="toast hidden" role="status"></p>
+      <div id="chat" class="chat hidden">
+        <div id="chat-peek" class="chat-peek hidden" aria-hidden="true"></div>
+        <section id="chat-panel" class="chat-panel hidden" aria-label="채팅">
+          <div class="chat-head"><b>채팅</b><button id="chat-close" class="chat-close" aria-label="채팅 닫기">×</button></div>
+          <ul id="chat-list" class="chat-list" aria-live="polite"></ul>
+          <form id="chat-form" class="chat-form" autocomplete="off">
+            <input id="chat-input" maxlength="60" placeholder="메시지 쓰기 (60자)" aria-label="채팅 메시지" />
+            <button type="submit" class="chat-send">보내기</button>
+          </form>
+        </section>
+        <button id="chat-toggle" class="chat-toggle" aria-expanded="false">💬 채팅<span id="chat-unread" class="chat-unread hidden"></span></button>
+      </div>
     </main>
     <script>
       // 파일 직접 열기는 일반 스크립트, 웹 주소는 기존 모듈을 사용합니다.
@@ -103,7 +115,7 @@
         const script = document.createElement("script");
         const localFile = location.protocol === "file:";
         if (!localFile) script.type = "module";
-        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-0258";
+        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-0317";
         script.onerror = () => {
           const message = localFile
             ? "미리보기 파일을 읽지 못했어요. ZIP 압축을 모두 풀고 local-preview.js가 index.html과 같은 폴더에 있는지 확인해 주세요."

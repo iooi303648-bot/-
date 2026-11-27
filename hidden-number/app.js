@@ -1,8 +1,9 @@
 // 숨은 숫자 — 화면과 버튼을 연결하는 코드
-import * as G from "./game.js?v=20261127-0258";
-import { connect } from "./net.js?v=20261127-0258";
-import { createMotionController } from "./motion.js?v=20261127-0258";
-import { createSound } from "./sound.js?v=20261127-0258";
+import * as G from "./game.js?v=20261127-0317";
+import { connect } from "./net.js?v=20261127-0317";
+import { createMotionController } from "./motion.js?v=20261127-0317";
+import { cleanText } from "./chat-filter.js?v=20261127-0317";
+import { createSound } from "./sound.js?v=20261127-0317";
 
 const $ = (id) => document.getElementById(id);
 const motion = createMotionController();
@@ -37,17 +38,18 @@ let selectedTurnKey = "";
 
 // ---------- 작은 도우미 ----------
 let toastTimer = null;
-function toast(message) {
+function toast(message, duration = 2600) {
   const el = $("toast");
   el.textContent = message;
   el.classList.remove("hidden");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add("hidden"), 2600);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), duration);
 }
 
 let activeScreen = null;
 function show(screenId) {
   $("home-btn")?.classList.toggle("hidden", screenId === "home");
+  $("chat")?.classList.toggle("hidden", screenId === "home");
   for (const id of ["home", "lobby", "game"]) $(id).classList.toggle("hidden", id !== screenId);
   if (activeScreen !== screenId) {
     motion.cancel();
@@ -85,6 +87,7 @@ function watch(code) {
   roomCode = code;
   lastLogLength = 0;
   soundPrev = null; // 방에 처음 들어올 때는 소리 없이 시작
+  resetChat();
   return new Promise((resolve) => {
     let first = true;
     unsubscribe = net.subscribe(code, (s) => {
@@ -213,6 +216,10 @@ function playStateSounds(next) {
     return;
   }
   if (prev.phase === "lobby") {
+    // 순서는 게임 시작 때 무작위로 섞여요. 모두에게 알려 주기
+    const order = next.players.map((p) => (p.id === myId ? `${p.name}(나)` : p.name)).join(" → ");
+    const first = next.players[next.turn];
+    toast(`🎲 순서를 섞었어요! ${first.id === myId ? "내가" : first.name + "이(가)"} 먼저 해요\n${order}`, 4500);
     queue("start");
     if (cur.turnId === myId) queue("myturn");
     return;
@@ -244,6 +251,89 @@ function render() {
   syncLobby();
   if (state.phase === "lobby") renderLobby();
   else renderGame(me);
+  renderChat();
+}
+
+// ---------- 채팅 ----------
+let chatSeen = -1;      // 지금까지 본 마지막 메시지 시각 (-1: 아직 처음)
+let chatUnread = 0;
+let chatLastSent = 0;
+let peekTimer = null;
+
+function resetChat() {
+  chatSeen = -1;
+  chatUnread = 0;
+  $("chat-list")?.replaceChildren();
+  setChatOpen(false);
+  updateUnread();
+}
+
+function setChatOpen(open) {
+  $("chat-panel").classList.toggle("hidden", !open);
+  $("chat-toggle").setAttribute("aria-expanded", String(open));
+  if (open) {
+    chatUnread = 0;
+    updateUnread();
+    $("chat-peek").classList.add("hidden");
+    const list = $("chat-list");
+    list.scrollTop = list.scrollHeight;
+    setTimeout(() => $("chat-input").focus(), 30);
+  }
+}
+
+function updateUnread() {
+  const badge = $("chat-unread");
+  badge.textContent = chatUnread > 9 ? "9+" : String(chatUnread);
+  badge.classList.toggle("hidden", chatUnread === 0);
+}
+
+function renderChat() {
+  const chat = Array.isArray(state?.chat) ? state.chat : [];
+  const list = $("chat-list");
+  const open = !$("chat-panel").classList.contains("hidden");
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  const fresh = chatSeen < 0 ? [] : chat.filter((m) => m.t > chatSeen && m.id !== myId);
+
+  list.replaceChildren(
+    ...(chat.length ? chat.map((m) => {
+      const li = el("li", m.id === myId ? "chat-msg mine" : "chat-msg");
+      if (m.id !== myId) li.append(el("span", "chat-name", m.name));
+      li.append(el("span", "chat-text", cleanText(m.text)));
+      return li;
+    }) : [el("li", "chat-empty", "아직 메시지가 없어요. 인사해 볼까요?")]),
+  );
+  if (open ? atBottom || fresh.length : true) list.scrollTop = list.scrollHeight;
+
+  if (fresh.length) {
+    sound.play("chat");
+    if (!open) {
+      chatUnread += fresh.length;
+      updateUnread();
+      const last = fresh[fresh.length - 1];
+      const peek = $("chat-peek");
+      peek.textContent = `${last.name}: ${cleanText(last.text)}`;
+      peek.classList.remove("hidden");
+      clearTimeout(peekTimer);
+      peekTimer = setTimeout(() => peek.classList.add("hidden"), 3500);
+    }
+  }
+  chatSeen = chat.length ? chat[chat.length - 1].t : 0;
+}
+
+async function sendChat(event) {
+  event.preventDefault();
+  const input = $("chat-input");
+  const text = cleanText(input.value);
+  if (!text || !roomCode) return;
+  const now = Date.now();
+  if (now - chatLastSent < 1500) return toast("조금 천천히 보내 주세요.");
+  const mine = (state?.chat || []).filter((m) => m.id === myId);
+  if (mine.length && mine[mine.length - 1].text === text && now - mine[mine.length - 1].t < 10000) {
+    return toast("같은 말을 연속으로 보낼 수 없어요.");
+  }
+  chatLastSent = now;
+  input.value = "";
+  await act((s) => G.addChat(s, myId, text));
 }
 
 // ---------- 열려 있는 방 목록 ----------
@@ -265,7 +355,7 @@ function syncLobby() {
   if (key === lobbyKey) return;
   lobbyKey = key;
   lobbyCode = roomCode;
-  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: Date.now() }).catch(() => {});
+  net.setLobby(roomCode, { host: host.name, count: state.players.length, max: G.MAX_PLAYERS, ts: state.createdAt || Date.now() }).catch(() => {});
 }
 
 function unpublishLobby() {
@@ -275,39 +365,68 @@ function unpublishLobby() {
   lobbyKey = "";
 }
 
+// 목록 항목을 통째로 다시 그리지 않고, 바뀐 글자만 고쳐요 (방이 깜빡이거나 순서가 바뀌지 않게)
+const roomNodes = new Map();
+
+function roomItem(code) {
+  const li = el("li", "room-item");
+  const info = el("div", "room-info");
+  const title = el("b");
+  const meta = el("span");
+  info.append(title, meta);
+  const join = el("button", "room-join", "들어가기");
+  join.addEventListener("click", () => {
+    if (!myName()) {
+      $("name").focus();
+      return toast("이름을 먼저 써 주세요.");
+    }
+    joinRoom(code);
+  });
+  li.append(info, join);
+  return { li, title, meta };
+}
+
 function renderOpenRooms() {
   const list = $("room-list");
   if (!list) return;
   const now = Date.now();
+  // 만든 순서대로 고정 (새 방은 아래에 붙어요)
   const rooms = Object.entries(openRooms)
     .filter(([, r]) => r && r.count < (r.max || G.MAX_PLAYERS) && now - (r.ts || 0) < 3 * 60 * 60 * 1000)
-    .sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
-  if (lobbyError) {
-    list.replaceChildren(el("li", "room-empty", "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."));
-    $("code-join").open = true;
+    .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0) || a[0].localeCompare(b[0]));
+
+  const message = lobbyError
+    ? "방 목록을 불러오지 못했어요. 아래 방 번호로 들어가 주세요."
+    : rooms.length ? "" : "아직 열린 방이 없어요. 새 방을 만들어 보세요!";
+  if (lobbyError) $("code-join").open = true;
+  if (message) {
+    roomNodes.clear();
+    const empty = list.querySelector(".room-empty");
+    if (empty && list.children.length === 1) empty.textContent = message;
+    else list.replaceChildren(el("li", "room-empty", message));
     return;
   }
-  if (!rooms.length) {
-    list.replaceChildren(el("li", "room-empty", "아직 열린 방이 없어요. 새 방을 만들어 보세요!"));
-    return;
+  list.querySelector(".room-empty")?.remove();
+
+  const keep = new Set(rooms.map(([code]) => code));
+  for (const [code, node] of roomNodes) {
+    if (!keep.has(code)) {
+      node.li.remove();
+      roomNodes.delete(code);
+    }
   }
-  list.replaceChildren(
-    ...rooms.map(([code, r]) => {
-      const li = el("li", "room-item");
-      const info = el("div", "room-info");
-      info.append(el("b", "", `${r.host}의 방`), el("span", "", `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`));
-      const join = el("button", "room-join", "들어가기");
-      join.addEventListener("click", () => {
-        if (!myName()) {
-          $("name").focus();
-          return toast("이름을 먼저 써 주세요.");
-        }
-        joinRoom(code);
-      });
-      li.append(info, join);
-      return li;
-    }),
-  );
+  for (const [code, r] of rooms) {
+    let node = roomNodes.get(code);
+    if (!node) {
+      node = roomItem(code);
+      roomNodes.set(code, node);
+      list.append(node.li);
+    }
+    const title = `${r.host}의 방`;
+    const meta = `${r.count}/${r.max || G.MAX_PLAYERS}명 · 기다리는 중`;
+    if (node.title.textContent !== title) node.title.textContent = title;
+    if (node.meta.textContent !== meta) node.meta.textContent = meta;
+  }
 }
 
 function renderLobby() {
@@ -589,6 +708,9 @@ async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
   sound.bind($("sound-toggle"));
   $("home-btn").addEventListener("click", goHome);
+  $("chat-toggle").addEventListener("click", () => setChatOpen($("chat-panel").classList.contains("hidden")));
+  $("chat-close").addEventListener("click", () => setChatOpen(false));
+  $("chat-form").addEventListener("submit", sendChat);
   $("demo-hand")?.addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();

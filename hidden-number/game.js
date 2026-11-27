@@ -65,7 +65,22 @@ export function createRoom(hostId, hostName) {
     lastGuess: null,
     winnerId: null,
     log: [],
+    chat: [],
+    createdAt: Date.now(),
   };
+}
+
+// 채팅 한 줄 추가 (최근 40개만 보관). 글 다듬기·비속어 가리기는 보내는 쪽에서 해요.
+export const CHAT_KEEP = 40;
+export function addChat(state, id, text) {
+  const player = state.players.find((p) => p.id === id);
+  if (!player) throw new Error("방에 있는 사람만 채팅할 수 있어요.");
+  const clean = String(text ?? "").trim().slice(0, 60);
+  if (!clean) throw new Error("메시지를 써 주세요.");
+  const chat = Array.isArray(state.chat) ? state.chat : [];
+  chat.push({ id, name: player.name, text: clean, t: Date.now() });
+  state.chat = chat.slice(-CHAT_KEEP);
+  return state;
 }
 
 export function addPlayer(state, id, name) {
