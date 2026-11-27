@@ -329,6 +329,14 @@ export function leaveGame(state, id) {
   return state;
 }
 
+// 방장이 다른 사람 내보내기 (탭을 닫고 사라진 '유령' 자리 때문에 게임이 멈출 때)
+export function kickPlayer(state, byId, targetId) {
+  if (byId !== state.hostId) throw new Error("방장만 내보낼 수 있어요.");
+  if (byId === targetId) throw new Error("나는 내보낼 수 없어요.");
+  if (!state.players.some((p) => p.id === targetId)) return state;
+  return leaveGame(state, targetId);
+}
+
 // 같은 친구들끼리 다시 하기
 export function backToLobby(state, byId) {
   if (byId !== state.hostId) throw new Error("방장만 할 수 있어요.");

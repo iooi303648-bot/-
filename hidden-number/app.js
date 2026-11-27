@@ -1,9 +1,9 @@
 // 숨은 숫자 — 화면과 버튼을 연결하는 코드
-import * as G from "./game.js?v=20261127-0338";
-import { connect } from "./net.js?v=20261127-0338";
-import { createMotionController } from "./motion.js?v=20261127-0338";
-import { cleanText } from "./chat-filter.js?v=20261127-0338";
-import { createSound } from "./sound.js?v=20261127-0338";
+import * as G from "./game.js?v=20261127-0345";
+import { connect } from "./net.js?v=20261127-0345";
+import { createMotionController } from "./motion.js?v=20261127-0345";
+import { cleanText } from "./chat-filter.js?v=20261127-0345";
+import { createSound } from "./sound.js?v=20261127-0345";
 
 const $ = (id) => document.getElementById(id);
 const motion = createMotionController();
@@ -11,25 +11,43 @@ const sound = createSound();
 let soundPrev = null;
 let motionSnapshot = null;
 
-// 탭마다 고유한 '나' (새로고침해도 유지)
+// '나' 기억하기
+// - 온라인 모드: 브라우저에 저장 → 탭을 닫았다 다시 열어도 같은 사람, 하던 자리로 돌아가요.
+// - 연습 모드: 탭마다 따로 저장 → 한 컴퓨터의 여러 탭이 서로 다른 사람이 돼요.
+let persistent = false;
+const area = () => (persistent ? localStorage : sessionStorage);
 function storageGet(key) {
-  try { return sessionStorage.getItem(key); } catch { return null; }
+  try { return area().getItem(key); } catch { return null; }
 }
 function storageSet(key, value) {
   try {
-    if (value === null) sessionStorage.removeItem(key);
-    else sessionStorage.setItem(key, value);
+    if (value === null) area().removeItem(key);
+    else area().setItem(key, value);
   } catch { /* 저장 못 해도 게임은 진행 */ }
 }
 
-let myId = storageGet("hn-id");
-if (!myId) {
-  myId = Math.random().toString(36).slice(2, 10);
-  storageSet("hn-id", myId);
+let myId = null;
+function initIdentity(online) {
+  persistent = online;
+  if (online) {
+    // 예전 버전(탭에 저장)에서 쓰던 '나'를 그대로 이어받기
+    try {
+      for (const k of ["hn-id", "hn-room", "hn-name"]) {
+        const v = sessionStorage.getItem(k);
+        if (v && !localStorage.getItem(k)) localStorage.setItem(k, v);
+      }
+    } catch { /* 무시 */ }
+  }
+  myId = storageGet("hn-id");
+  if (!myId) {
+    myId = Math.random().toString(36).slice(2, 10);
+    storageSet("hn-id", myId);
+  }
 }
 
 let net = null;
 let roomCode = null;
+let wasInRoom = false;
 let unsubscribe = null;
 let state = null;
 let selected = null; // { targetId, index }
@@ -86,6 +104,7 @@ function watch(code) {
   if (unsubscribe) unsubscribe();
   roomCode = code;
   lastLogLength = 0;
+  wasInRoom = false;
   soundPrev = null; // 방에 처음 들어올 때는 소리 없이 시작
   resetChat();
   return new Promise((resolve) => {
@@ -243,11 +262,17 @@ function render() {
   playStateSounds(state);
   const me = state.players.find((p) => p.id === myId);
   if (!me) {
-    // 대기실에서 빠졌거나, 게임이 이미 시작된 방
-    if (state.phase === "lobby") return;
+    // 들어가는 중(대기실)이면 잠깐 기다리고, 이미 있던 방에서 빠졌으면(내보내짐) 처음 화면으로
+    if (state.phase === "lobby" && !wasInRoom) return;
+    const kicked = wasInRoom;
     leaveRoom();
-    return toast("이미 게임이 시작된 방이에요.");
+    return toast(kicked ? "방에서 나왔어요." : "이미 게임이 시작된 방이에요.");
   }
+  if (me.left) {
+    leaveRoom();
+    return toast("방에서 나왔어요.");
+  }
+  wasInRoom = true;
   syncLobby();
   if (state.phase === "lobby") renderLobby();
   else renderGame(me);
@@ -429,6 +454,20 @@ function renderOpenRooms() {
   }
 }
 
+// 방장만 보이는 '내보내기' 버튼 (사라진 친구 자리 때문에 게임이 멈출 때)
+function kickButton(player) {
+  const b = el("button", "kick-btn", "내보내기");
+  b.setAttribute("aria-label", `${player.name} 내보내기`);
+  b.addEventListener("click", () => {
+    const playing = state && state.phase !== "lobby";
+    const msg = playing
+      ? `${player.name}을(를) 내보낼까요?\n타일이 모두 공개되고 탈락해요. (화면을 닫고 사라진 친구일 때 써요)`
+      : `${player.name}을(를) 방에서 내보낼까요?`;
+    if (window.confirm(msg)) act((s) => G.kickPlayer(s, myId, player.id));
+  });
+  return b;
+}
+
 function renderLobby() {
   show("lobby");
   const codeBox = $("lobby-code");
@@ -443,6 +482,7 @@ function renderLobby() {
       const crown = p.id === state.hostId ? " · 방장" : "";
       const you = p.id === myId ? " (나)" : "";
       li.append(avatarNode(p), el("span", "", p.name + you + crown));
+      if (state.hostId === myId && p.id !== myId) li.append(kickButton(p));
       return li;
     }),
   );
@@ -561,6 +601,7 @@ function renderGame(me) {
         el("div", "seat-info", state.phase === "setup" ? "타일 정리 중" : out ? "모두 공개 · 탈락" : `숨은 타일 ${hiddenCount}개`),
       );
       head.append(avatarNode(p), nameBox);
+      if (state.hostId === myId && !p.left && state.phase !== "over") head.append(kickButton(p));
       box.append(head);
       if (state.phase === "setup") {
         // 시작 단계: 받침대를 천으로 덮어서 몇 장인지, 조커를 어디 놓는지 안 보이게
@@ -783,8 +824,9 @@ async function main() {
   $("chat-close").addEventListener("click", () => setChatOpen(false));
   $("chat-form").addEventListener("submit", sendChat);
   $("demo-hand")?.addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
-  $("name").value = storageGet("hn-name") || "";
   net = await connect();
+  initIdentity(net.mode === "online");
+  $("name").value = storageGet("hn-name") || "";
 
   const badge = $("mode-badge");
   if (net.mode === "online") {
