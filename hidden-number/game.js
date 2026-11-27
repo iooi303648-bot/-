@@ -198,11 +198,47 @@ export function keepGoing(state, byId) {
   return state;
 }
 
+// 방/게임에서 나가기 (처음으로 버튼)
+// 대기실: 명단에서 빠짐. 게임 중: 타일을 모두 공개해서 탈락 처리하고 게임은 계속.
+export function leaveGame(state, id) {
+  if (state.phase === "lobby") return removePlayer(state, id);
+  const index = state.players.findIndex((p) => p.id === id);
+  if (index === -1) return state;
+  const player = state.players[index];
+  if (player.left) return state;
+  player.left = true;
+  if (state.hostId === id) {
+    const next = state.players.find((p) => !p.left);
+    if (next) state.hostId = next.id;
+  }
+  if (state.phase === "over") return state;
+
+  const wasTurn = state.turn === index;
+  const alreadyOut = isOut(player);
+  player.hand.forEach((t) => { t.open = true; });
+  player.outLogged = true;
+  addLog(state, `🚪 ${player.name} 나감${alreadyOut ? "" : " (탈락)"}`);
+
+  // 나간 사람이 뽑아 둔 타일은 더미로 되돌림
+  if (wasTurn && state.drawn) {
+    const { n, c } = state.drawn;
+    state.deck.splice(Math.floor(Math.random() * (state.deck.length + 1)), 0, { n, c });
+    state.drawn = null;
+  }
+  if (checkWinner(state)) {
+    if (state.drawn) insertSorted(currentPlayer(state).hand, state.drawn);
+    state.drawn = null;
+    return state;
+  }
+  if (wasTurn) nextTurn(state);
+  return state;
+}
+
 // 같은 친구들끼리 다시 하기
 export function backToLobby(state, byId) {
   if (byId !== state.hostId) throw new Error("방장만 할 수 있어요.");
   state.phase = "lobby";
-  state.players = state.players.map(({ id, name }) => ({ id, name, hand: [] }));
+  state.players = state.players.filter((p) => !p.left).map(({ id, name }) => ({ id, name, hand: [] }));
   state.deck = [];
   state.drawn = null;
   state.lastGuess = null;

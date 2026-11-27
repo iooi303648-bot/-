@@ -47,6 +47,7 @@ function toast(message) {
 
 let activeScreen = null;
 function show(screenId) {
+  $("home-btn")?.classList.toggle("hidden", screenId === "home");
   for (const id of ["home", "lobby", "game"]) $(id).classList.toggle("hidden", id !== screenId);
   if (activeScreen !== screenId) {
     motion.cancel();
@@ -104,6 +105,16 @@ function leaveRoom() {
   state = null;
   storageSet("hn-room", null);
   show("home");
+}
+
+// 처음 화면으로: 게임 중이면 한 번 물어보고, 나간 사람은 탈락 처리
+async function goHome() {
+  if (!roomCode) return show("home");
+  const me = state?.players.find((p) => p.id === myId);
+  const playing = state && (state.phase === "guess" || state.phase === "continue") && me && !G.isOut(me);
+  if (playing && !window.confirm("게임을 그만두고 처음 화면으로 갈까요?\n그만두면 내 타일이 모두 공개되고 탈락해요.")) return;
+  if (state) await act((s) => G.leaveGame(s, myId));
+  leaveRoom();
 }
 
 async function createRoom() {
@@ -457,7 +468,7 @@ function renderPanel(me, myTurn) {
       row.append(again);
     }
     const leave = el("button", "", "나가기");
-    leave.addEventListener("click", leaveRoom);
+    leave.addEventListener("click", goHome);
     row.append(leave);
     panel.append(row);
     return;
@@ -510,6 +521,7 @@ function renderPanel(me, myTurn) {
 async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
   sound.bind($("sound-toggle"));
+  $("home-btn").addEventListener("click", goHome);
   $("demo-hand").addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();
@@ -532,7 +544,7 @@ async function main() {
   });
   $("start").addEventListener("click", () => act((s) => G.startGame(s, myId)));
   $("leave").addEventListener("click", async () => {
-    if (roomCode) await act((s) => G.removePlayer(s, myId));
+    if (roomCode) await act((s) => G.leaveGame(s, myId));
     leaveRoom();
   });
   $("create").disabled = false;

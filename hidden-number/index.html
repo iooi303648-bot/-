@@ -15,7 +15,7 @@
     <main class="app">
       <header class="site-header">
         <div class="wordmark"><span class="brand-mark" aria-hidden="true"><i>?</i><i>7</i></span></div>
-        <div class="header-tools"><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="sound-toggle" class="motion-toggle" aria-pressed="true">소리 켜짐</button><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
+        <div class="header-tools"><button id="home-btn" class="motion-toggle home-btn hidden">← 처음으로</button><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="sound-toggle" class="motion-toggle" aria-pressed="true">소리 켜짐</button><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
       </header>
       <section id="home" class="screen home-screen" aria-label="게임 시작">
         <div class="home-layout">
@@ -124,7 +124,7 @@
         const script = document.createElement("script");
         const localFile = location.protocol === "file:";
         if (!localFile) script.type = "module";
-        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-3";
+        script.src = localFile ? "./local-preview.js" : "./app.js?v=20261127-4";
         script.onerror = () => {
           const message = localFile
             ? "미리보기 파일을 읽지 못했어요. ZIP 압축을 모두 풀고 local-preview.js가 index.html과 같은 폴더에 있는지 확인해 주세요."

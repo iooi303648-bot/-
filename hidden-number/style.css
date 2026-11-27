@@ -1471,3 +1471,13 @@ button.table-demo:hover:not(:disabled) { background: #c2d1b814; }
 @media (prefers-reduced-motion: reduce) {
   .owl, .owl .owl-glass, .owl .owl-lids { animation: none; }
 }
+
+/* 처음으로 버튼: 방에 들어가 있을 때만 보임 */
+button.home-btn {
+  background: #fffaf0;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .header-note { display: none; }
+  .header-tools { gap: 8px; }
+}

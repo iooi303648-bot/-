@@ -203,11 +203,47 @@ function keepGoing(state, byId) {
   return state;
 }
 
+// 방/게임에서 나가기 (처음으로 버튼)
+// 대기실: 명단에서 빠짐. 게임 중: 타일을 모두 공개해서 탈락 처리하고 게임은 계속.
+function leaveGame(state, id) {
+  if (state.phase === "lobby") return removePlayer(state, id);
+  const index = state.players.findIndex((p) => p.id === id);
+  if (index === -1) return state;
+  const player = state.players[index];
+  if (player.left) return state;
+  player.left = true;
+  if (state.hostId === id) {
+    const next = state.players.find((p) => !p.left);
+    if (next) state.hostId = next.id;
+  }
+  if (state.phase === "over") return state;
+
+  const wasTurn = state.turn === index;
+  const alreadyOut = isOut(player);
+  player.hand.forEach((t) => { t.open = true; });
+  player.outLogged = true;
+  addLog(state, `🚪 ${player.name} 나감${alreadyOut ? "" : " (탈락)"}`);
+
+  // 나간 사람이 뽑아 둔 타일은 더미로 되돌림
+  if (wasTurn && state.drawn) {
+    const { n, c } = state.drawn;
+    state.deck.splice(Math.floor(Math.random() * (state.deck.length + 1)), 0, { n, c });
+    state.drawn = null;
+  }
+  if (checkWinner(state)) {
+    if (state.drawn) insertSorted(currentPlayer(state).hand, state.drawn);
+    state.drawn = null;
+    return state;
+  }
+  if (wasTurn) nextTurn(state);
+  return state;
+}
+
 // 같은 친구들끼리 다시 하기
 function backToLobby(state, byId) {
   if (byId !== state.hostId) throw new Error("방장만 할 수 있어요.");
   state.phase = "lobby";
-  state.players = state.players.map(({ id, name }) => ({ id, name, hand: [] }));
+  state.players = state.players.filter((p) => !p.left).map(({ id, name }) => ({ id, name, hand: [] }));
   state.deck = [];
   state.drawn = null;
   state.lastGuess = null;
@@ -216,7 +252,7 @@ function backToLobby(state, byId) {
   return state;
 }
 
-return { MAX_NUMBER, MIN_PLAYERS, MAX_PLAYERS, compareTiles, isOut, createRoom, addPlayer, removePlayer, startGame, currentPlayer, guess, stop, keepGoing, backToLobby };
+return { MAX_NUMBER, MIN_PLAYERS, MAX_PLAYERS, compareTiles, isOut, createRoom, addPlayer, removePlayer, startGame, currentPlayer, guess, stop, keepGoing, leaveGame, backToLobby };
 })();
 const firebaseConfig = {};
 // 손과 타일은 화면 위에서만 움직입니다. 게임 상태나 버튼 입력은 기다리지 않습니다.
@@ -702,6 +738,7 @@ function toast(message) {
 
 let activeScreen = null;
 function show(screenId) {
+  $("home-btn")?.classList.toggle("hidden", screenId === "home");
   for (const id of ["home", "lobby", "game"]) $(id).classList.toggle("hidden", id !== screenId);
   if (activeScreen !== screenId) {
     motion.cancel();
@@ -759,6 +796,16 @@ function leaveRoom() {
   state = null;
   storageSet("hn-room", null);
   show("home");
+}
+
+// 처음 화면으로: 게임 중이면 한 번 물어보고, 나간 사람은 탈락 처리
+async function goHome() {
+  if (!roomCode) return show("home");
+  const me = state?.players.find((p) => p.id === myId);
+  const playing = state && (state.phase === "guess" || state.phase === "continue") && me && !G.isOut(me);
+  if (playing && !window.confirm("게임을 그만두고 처음 화면으로 갈까요?\n그만두면 내 타일이 모두 공개되고 탈락해요.")) return;
+  if (state) await act((s) => G.leaveGame(s, myId));
+  leaveRoom();
 }
 
 async function createRoom() {
@@ -1112,7 +1159,7 @@ function renderPanel(me, myTurn) {
       row.append(again);
     }
     const leave = el("button", "", "나가기");
-    leave.addEventListener("click", leaveRoom);
+    leave.addEventListener("click", goHome);
     row.append(leave);
     panel.append(row);
     return;
@@ -1165,6 +1212,7 @@ function renderPanel(me, myTurn) {
 async function main() {
   motion.bind($("motion-toggle"), $("demo-hand"));
   sound.bind($("sound-toggle"));
+  $("home-btn").addEventListener("click", goHome);
   $("demo-hand").addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();
@@ -1187,7 +1235,7 @@ async function main() {
   });
   $("start").addEventListener("click", () => act((s) => G.startGame(s, myId)));
   $("leave").addEventListener("click", async () => {
-    if (roomCode) await act((s) => G.removePlayer(s, myId));
+    if (roomCode) await act((s) => G.leaveGame(s, myId));
     leaveRoom();
   });
   $("create").disabled = false;
