@@ -2149,3 +2149,37 @@ button.chat-send:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d201
   button.chat-toggle { min-height: 44px; padding: 8px 16px; font-size: 15px; }
 }
 .toast { white-space: pre-line; }
+
+/* ===== 조커 ===== */
+.tile.joker .joker-star {
+  font-size: .95em;
+  line-height: 1;
+  color: #d9a52a;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .25);
+}
+.tile.dark.joker .joker-star { color: #f2c94c; }
+.numpad .numpad-joker .joker-star { font-size: 1.1em; }
+
+/* 조커 놓을 자리 (+) */
+.hand.placing { align-items: flex-end; gap: 4px; }
+button.slot {
+  align-self: stretch;
+  width: 28px;
+  min-height: 0;
+  margin: 0 1px 6px;
+  padding: 0;
+  border-radius: 999px;
+  border: 2px dashed rgba(242, 201, 76, .85);
+  background: rgba(242, 201, 76, .12);
+  color: #f2c94c;
+  font-family: var(--round);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  animation: slot-pulse 1.4s ease-in-out infinite;
+}
+button.slot:hover { background: rgba(242, 201, 76, .3); transform: scale(1.06); }
+@keyframes slot-pulse { 50% { box-shadow: 0 0 0 4px rgba(242, 201, 76, .18); } }
+.panel-hint { display: block; font-size: 14px; color: #6c7a70; }
+@media (max-width: 600px) { button.slot { width: 22px; font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { button.slot { animation: none; } }

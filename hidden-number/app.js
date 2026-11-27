@@ -1,9 +1,9 @@
 // 숨은 숫자 — 화면과 버튼을 연결하는 코드
-import * as G from "./game.js?v=20261127-0317";
-import { connect } from "./net.js?v=20261127-0317";
-import { createMotionController } from "./motion.js?v=20261127-0317";
-import { cleanText } from "./chat-filter.js?v=20261127-0317";
-import { createSound } from "./sound.js?v=20261127-0317";
+import * as G from "./game.js?v=20261127-0321";
+import { connect } from "./net.js?v=20261127-0321";
+import { createMotionController } from "./motion.js?v=20261127-0321";
+import { cleanText } from "./chat-filter.js?v=20261127-0321";
+import { createSound } from "./sound.js?v=20261127-0321";
 
 const $ = (id) => document.getElementById(id);
 const motion = createMotionController();
@@ -459,14 +459,18 @@ function renderLobby() {
 
 function tileNode(tile, { showNumber, asButton }) {
   const node = el(asButton ? "button" : "div", `tile ${tile.c}`);
-  if (showNumber) {
+  if (showNumber && G.isJoker(tile)) {
+    node.classList.add("joker");
+    node.append(el("span", "joker-star", "★"));
+  } else if (showNumber) {
     // 6과 9는 뒤집어 봐도 헷갈리지 않게 밑줄
     node.append(el("span", tile.n === 6 || tile.n === 9 ? "u" : "", String(tile.n)));
   } else {
     node.classList.add("back");
   }
   const colorName = tile.c === "dark" ? "검은" : "흰";
-  node.setAttribute("aria-label", showNumber ? `${colorName} 타일 ${tile.n}` : `${colorName} 숨은 타일`);
+  const label = G.isJoker(tile) ? `${colorName} 조커` : `${colorName} 타일 ${tile.n}`;
+  node.setAttribute("aria-label", showNumber ? label : `${colorName} 숨은 타일`);
   return node;
 }
 
@@ -516,6 +520,9 @@ function renderGame(me) {
     const winner = state.players.find((p) => p.id === state.winnerId);
     banner.textContent = winner ? (winner.id === myId ? "내가 이겼어요!" : `${winner.name} 승리!`) : "게임 끝";
     banner.classList.add("over");
+  } else if (state.phase === "setup") {
+    banner.textContent = me.pending?.length ? "★ 조커 자리를 정해요" : "친구들이 조커 자리를 정하는 중";
+    if (me.pending?.length) banner.classList.add("my-turn");
   } else if (G.isOut(me)) {
     banner.textContent = `관전 중 · ${turnPlayer.name}의 차례`;
   } else if (myTurn) {
@@ -584,7 +591,9 @@ function renderGame(me) {
     }),
   );
   const drawnBox = $("drawn-box");
-  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}` : "";
+  const setupJoker = state.phase === "setup" ? me.pending?.[0] : null;
+  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}`
+    : setupJoker ? `setup-${setupJoker.c}-${me.pending.length}` : "";
   if (drawnBox.dataset.key !== drawnKey || !drawnKey) {
     drawnBox.dataset.key = drawnKey;
     drawnBox.replaceChildren();
@@ -592,6 +601,9 @@ function renderGame(me) {
       const mine = turnPlayer.id === myId;
       drawnBox.append(el("span", "drawn-label", mine ? "이번에 뽑은 타일" : `${turnPlayer.name} · 뽑은 타일`));
       drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
+    } else if (setupJoker) {
+      drawnBox.append(el("span", "drawn-label", "놓을 조커"));
+      drawnBox.append(tileNode(setupJoker, { showNumber: true, asButton: false }));
     } else if (state.phase !== "over" && state.deck.length === 0) {
       drawnBox.append(el("span", "drawn-label", "더미가 비었어요! 틀리면 내 타일 하나가 공개돼요."));
     }
@@ -603,8 +615,17 @@ function renderGame(me) {
   $("my-title").replaceChildren(avatarNode(me), el("span", "", `내 타일 (${me.name})`));
   document.querySelector("#game .me").style.setProperty("--seat", seatColor(me));
   const myHand = $("my-hand");
-  myHand.replaceChildren(
-    ...me.hand.map((tile, index) => {
+  const placing = (state.phase === "setup" && me.pending?.length) || (state.phase === "joker" && myTurn);
+  const slot = (index) => {
+    const b = el("button", "slot", "+");
+    b.setAttribute("aria-label", `${index + 1}번째 자리에 조커 놓기`);
+    b.addEventListener("click", () => {
+      sound.play("tap");
+      act((s) => G.placeJoker(s, myId, index));
+    });
+    return b;
+  };
+  const myTiles = me.hand.map((tile, index) => {
       const node = tileNode(tile, { showNumber: true, asButton: false });
       const mark = el("span", "mark", tile.open ? "공개" : "나만");
       mark.title = tile.open ? "친구들도 볼 수 있어요" : "나만 볼 수 있어요";
@@ -614,9 +635,10 @@ function renderGame(me) {
         node.classList.add(flash.correct ? "flash-good" : "flash-bad");
       }
       return node;
-    }),
-  );
-  playerTileNodes.set(myId, [...myHand.children]);
+    });
+  myHand.classList.toggle("placing", Boolean(placing));
+  myHand.replaceChildren(...(placing ? myTiles.flatMap((n, i) => [slot(i), n]).concat(slot(myTiles.length)) : myTiles));
+  playerTileNodes.set(myId, myTiles);
 
   // 기록
 
@@ -660,6 +682,18 @@ function renderPanel(me, myTurn) {
     return;
   }
 
+  if (state.phase === "setup" || state.phase === "joker") {
+    const turnPlayer = G.currentPlayer(state);
+    const mustPlace = (state.phase === "setup" && me.pending?.length) || (state.phase === "joker" && myTurn);
+    if (mustPlace) {
+      panel.append(el("p", "", "★ 조커를 놓을 자리를 골라 주세요"));
+      panel.append(el("span", "panel-hint", "내 받침대의 + 를 누르면 그 자리에 고정돼요. 조커는 어디에 놓아도 돼요."));
+    } else {
+      panel.append(el("p", "", state.phase === "setup" ? "친구들이 조커 자리를 고르는 중이에요…" : `${turnPlayer.name}이(가) 조커 자리를 고르는 중이에요…`));
+    }
+    return;
+  }
+
   if (!myTurn) return;
 
   if (state.phase === "continue") {
@@ -693,6 +727,16 @@ function renderPanel(me, myTurn) {
     });
     pad.append(b);
   }
+  const jokerBtn = tileNode({ n: null, c: color, j: true }, { showNumber: true, asButton: true });
+  jokerBtn.classList.add("numpad-joker");
+  jokerBtn.setAttribute("aria-label", "조커");
+  jokerBtn.addEventListener("click", () => {
+    const pick = selected;
+    selected = null;
+    sound.play("tap");
+    act((s) => G.guess(s, myId, pick.targetId, pick.index, G.JOKER));
+  });
+  pad.append(jokerBtn);
   panel.append(pad);
   const cancel = el("button", "", "다른 타일 고르기");
   cancel.style.marginTop = "10px";

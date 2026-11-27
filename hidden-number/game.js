@@ -26,16 +26,22 @@ function shuffle(list, rng) {
   return a;
 }
 
+// 조커: 숫자가 없는 타일 (j: true). 검은 조커 1장 + 흰 조커 1장.
+export const JOKER = "J";
+export const isJoker = (t) => Boolean(t && t.j);
+
 function makeDeck(rng) {
   const tiles = [];
   for (let n = 0; n <= MAX_NUMBER; n++) {
     tiles.push({ n, c: "dark" }, { n, c: "light" });
   }
+  tiles.push({ n: null, c: "dark", j: true }, { n: null, c: "light", j: true });
   return shuffle(tiles, rng);
 }
 
+// 숫자 타일 넣기: 조커는 자리가 고정이라 건너뛰고, 숫자 타일끼리만 순서를 맞춰요.
 function insertSorted(hand, tile) {
-  const i = hand.findIndex((t) => compareTiles(tile, t) < 0);
+  const i = hand.findIndex((t) => !isJoker(t) && compareTiles(tile, t) < 0);
   if (i === -1) hand.push(tile);
   else hand.splice(i, 0, tile);
 }
@@ -105,8 +111,13 @@ export function startGame(state, byId, rng = Math.random) {
   const handSize = state.players.length >= 4 ? 3 : 4;
   state.players = shuffle(state.players, rng).map((p) => {
     const hand = [];
-    for (let i = 0; i < handSize; i++) insertSorted(hand, { ...deck.pop(), open: false });
-    return { ...p, hand };
+    const pending = [];
+    for (let i = 0; i < handSize; i++) {
+      const tile = { ...deck.pop(), open: false };
+      if (isJoker(tile)) pending.push(tile);
+      else insertSorted(hand, tile);
+    }
+    return pending.length ? { ...p, hand, pending } : { ...p, hand };
   });
   state.deck = deck;
   state.phase = "guess";
@@ -115,13 +126,50 @@ export function startGame(state, byId, rng = Math.random) {
   state.lastGuess = null;
   state.log = [];
   addLog(state, `게임 시작! 첫 차례는 ${state.players[0].name}`);
-  beginTurn(state);
+  state.drawnIndex = null;
+  if (state.players.some((p) => p.pending?.length)) {
+    // 처음 받은 조커를 놓을 자리부터 골라요
+    state.phase = "setup";
+    state.drawn = null;
+  } else {
+    beginTurn(state);
+  }
   return state;
+}
+
+// 조커 자리 정하기. index = 내 받침대에서 놓을 칸 (0 = 맨 왼쪽)
+export function placeJoker(state, byId, index) {
+  const player = state.players.find((p) => p.id === byId);
+  if (!player) throw new Error("방에 없는 사람이에요.");
+  const at = (hand) => Math.max(0, Math.min(Number(index) || 0, hand.length));
+
+  if (state.phase === "setup") {
+    if (!player.pending?.length) throw new Error("놓을 조커가 없어요.");
+    const tile = player.pending.shift();
+    if (!player.pending.length) delete player.pending;
+    player.hand.splice(at(player.hand), 0, { ...tile, open: false, fixed: true });
+    if (!state.players.some((p) => p.pending?.length)) {
+      addLog(state, "조커 자리를 모두 정했어요");
+      beginTurn(state);
+    }
+    return state;
+  }
+  if (state.phase === "joker") {
+    if (currentPlayer(state).id !== byId) throw new Error("내 차례가 아니에요.");
+    const i = at(player.hand);
+    player.hand.splice(i, 0, { ...state.drawn, open: false, fixed: true });
+    state.drawn = null;
+    state.drawnIndex = i; // 틀리면 이 조커가 공개돼요
+    state.phase = "guess";
+    return state;
+  }
+  throw new Error("지금은 조커를 놓을 수 없어요.");
 }
 
 function beginTurn(state) {
   state.drawn = state.deck.length ? { ...state.deck.pop(), open: false } : null;
-  state.phase = "guess";
+  state.drawnIndex = null;
+  state.phase = isJoker(state.drawn) ? "joker" : "guess";
 }
 
 function nextTurn(state) {
@@ -167,12 +215,14 @@ export function guess(state, byId, targetId, tileIndex, number) {
   const tile = target.hand[tileIndex];
   if (!tile || tile.open) throw new Error("이미 공개된 타일이에요.");
 
-  const correct = tile.n === number;
+  const saysJoker = number === JOKER;
+  const correct = isJoker(tile) ? saysJoker : !saysJoker && tile.n === number;
+  const said = saysJoker ? "조커" : number;
   state.lastGuess = { byId, targetId, tileIndex, number, correct };
 
   if (correct) {
     tile.open = true;
-    addLog(state, `⭕ ${me.name} → ${target.name}의 타일은 ${number}! 정답`);
+    addLog(state, `⭕ ${me.name} → ${target.name}의 타일은 ${said}! 정답`);
     if (checkWinner(state)) {
       if (state.drawn) insertSorted(me.hand, state.drawn);
       state.drawn = null;
@@ -180,8 +230,12 @@ export function guess(state, byId, targetId, tileIndex, number) {
     }
     state.phase = "continue";
   } else {
-    addLog(state, `❌ ${me.name} → ${target.name}의 타일이 ${number}? 틀렸어요`);
-    if (state.drawn) {
+    addLog(state, `❌ ${me.name} → ${target.name}의 타일이 ${said}? 틀렸어요`);
+    if (state.drawnIndex != null && me.hand[state.drawnIndex]) {
+      // 이번에 뽑아서 놓은 조커를 공개
+      me.hand[state.drawnIndex].open = true;
+      state.drawnIndex = null;
+    } else if (state.drawn) {
       insertSorted(me.hand, { ...state.drawn, open: true });
       state.drawn = null;
     } else {
@@ -229,6 +283,10 @@ export function leaveGame(state, id) {
   if (state.phase === "over") return state;
 
   const wasTurn = state.turn === index;
+  if (player.pending?.length) {
+    player.hand.push(...player.pending);
+    delete player.pending;
+  }
   const alreadyOut = isOut(player);
   player.hand.forEach((t) => { t.open = true; });
   player.outLogged = true;
@@ -236,13 +294,21 @@ export function leaveGame(state, id) {
 
   // 나간 사람이 뽑아 둔 타일은 더미로 되돌림
   if (wasTurn && state.drawn) {
-    const { n, c } = state.drawn;
-    state.deck.splice(Math.floor(Math.random() * (state.deck.length + 1)), 0, { n, c });
+    const { open, fixed, ...tile } = state.drawn; // 조커 표시(j)는 그대로
+    state.deck.splice(Math.floor(Math.random() * (state.deck.length + 1)), 0, tile);
     state.drawn = null;
   }
   if (checkWinner(state)) {
     if (state.drawn) insertSorted(currentPlayer(state).hand, state.drawn);
     state.drawn = null;
+    return state;
+  }
+  if (state.phase === "setup") {
+    if (!state.players.some((p) => p.pending?.length && !p.left)) {
+      // 남은 사람들이 조커를 다 놓았으면 시작. 첫 차례가 나간 사람이면 다음 사람으로
+      if (isOut(currentPlayer(state))) nextTurn(state);
+      else beginTurn(state);
+    }
     return state;
   }
   if (wasTurn) nextTurn(state);
@@ -254,6 +320,7 @@ export function backToLobby(state, byId) {
   if (byId !== state.hostId) throw new Error("방장만 할 수 있어요.");
   state.phase = "lobby";
   state.players = state.players.filter((p) => !p.left).map(({ id, name }) => ({ id, name, hand: [] }));
+  state.drawnIndex = null;
   state.deck = [];
   state.drawn = null;
   state.lastGuess = null;
