@@ -1,13 +1,12 @@
-// Firebase 설정을 여기에 붙여 넣으세요. (방법은 README.md 참고)
-// 비워 두면 '연습 모드'로 실행돼요. 연습 모드는 한 컴퓨터의 여러 탭끼리만 같이 할 수 있어요.
-//
-// 예시:
-// export const firebaseConfig = {
-//   apiKey: "AIza....",
-//   authDomain: "my-game.firebaseapp.com",
-//   databaseURL: "https://my-game-default-rtdb.asia-southeast1.firebasedatabase.app",
-//   projectId: "my-game",
-//   appId: "1:123:web:abc",
-// };
+// Firebase 설정 (Realtime Database로 여러 기기를 연결해요)
+// 이 값들은 비밀번호가 아니라서 공개되어도 괜찮아요. 데이터 접근은 Firebase 규칙으로 정해져요.
 
-export const firebaseConfig = {};
+export const firebaseConfig = {
+  apiKey: "AIzaSyAfnuhRiGDJxnFiBotfiYjaifd6LuRGnEA",
+  authDomain: "davinchcode-d6858.firebaseapp.com",
+  databaseURL: "https://davinchcode-d6858-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "davinchcode-d6858",
+  storageBucket: "davinchcode-d6858.firebasestorage.app",
+  messagingSenderId: "576009441906",
+  appId: "1:576009441906:web:bfb33c1df595b0354528eb",
+};
