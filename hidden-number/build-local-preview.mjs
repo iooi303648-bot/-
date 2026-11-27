@@ -8,6 +8,7 @@ const names = [...game.matchAll(/export\s+(?:const|function)\s+(\w+)/g)].map((ma
 const net = read("net.js").replace(/^import[^\n]+\n/gm, "").replace(/^export /gm, "");
 const app = read("app.js").replace(/^import[^\n]+\n/gm, "");
 const motion = read("motion.js").replace(/^export /gm, "");
+const sound = read("sound.js").replace(/^export /gm, "");
 const output = `// build-local-preview.mjs로 생성. 직접 수정하지 마세요.
 // file:// 미리보기는 Firebase를 사용하지 않는 연습 모드입니다.
 (() => {
@@ -18,6 +19,7 @@ return { ${names.join(", ")} };
 })();
 const firebaseConfig = {};
 ${motion}
+${sound}
 ${net}
 ${app}
 })();
