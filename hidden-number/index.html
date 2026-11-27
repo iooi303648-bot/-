@@ -15,14 +15,13 @@
     <main class="app">
       <header class="site-header">
         <div class="wordmark"><span class="brand-mark" aria-hidden="true"><i>?</i><i>7</i></span></div>
-        <div class="header-tools"><button id="home-btn" class="motion-toggle home-btn hidden">← 처음으로</button><span class="header-note">친구와 마주 앉는 추리 한 판</span><button id="sound-toggle" class="motion-toggle" aria-pressed="true">소리 켜짐</button><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
+        <div class="header-tools"><button id="home-btn" class="motion-toggle home-btn hidden">← 처음으로</button><button id="sound-toggle" class="motion-toggle" aria-pressed="true">소리 켜짐</button><button id="motion-toggle" class="motion-toggle" aria-pressed="true">손 연출 켜짐</button></div>
       </header>
       <section id="home" class="screen home-screen" aria-label="게임 시작">
         <div class="home-layout">
           <div class="intro">
-            <p class="eyebrow">흑과 백 사이, 작은 단서 하나</p>
-            <h1>쉿,<br />어떤 숫자일까?</h1>
-            <p class="intro-copy">보이는 건 색깔과 순서뿐.<br />친구의 숫자를 하나씩 알아맞혀 보세요.</p>
+            <h1>친구 타일의<br />숫자를 맞혀요</h1>
+            <p class="intro-copy">숨은 타일을 모두 들키면 탈락!<br />끝까지 남는 사람이 이겨요.</p>
             <div class="tile-scene" aria-hidden="true">
               <div class="owl-wrap">
                 <svg class="owl" viewBox="0 0 120 124" aria-hidden="true">
@@ -60,7 +59,7 @@
                   <path d="M86 71 q3 -3 7 -2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/>
                 </g>
               </svg>
-              <div class="scene-note">분명, 이 사이에 있어.</div>
+              <div class="scene-note">4? 5? 아니면 6?</div>
               </div>
               <div class="hero-tiles">
                 <div class="tile light hero-first"><span>3</span><small>공개</small></div>
@@ -74,11 +73,11 @@
             <button id="demo-hand" class="table-demo">타일 집어보기</button>
           </div>
           <div class="entry-card">
-            <div class="entry-heading"><span class="small-label">같이 할 준비됐나요?</span><h2>자리를 만들어 볼까요</h2></div>
-            <label class="field" for="name">내 이름<input id="name" maxlength="8" placeholder="친구들이 부를 이름" autocomplete="off" /></label>
+            <div class="entry-heading"><h2>게임 시작</h2></div>
+            <label class="field" for="name">내 이름<input id="name" maxlength="8" placeholder="이름이나 별명" autocomplete="off" /></label>
             <div class="home-actions">
               <button id="create" class="primary" disabled>새 방 만들기</button>
-              <div class="divider"><span>초대받았다면</span></div>
+              <div class="divider"><span>또는</span></div>
               <label class="field code-field" for="code">방 번호</label>
               <div class="join-row"><input id="code" aria-label="방 번호 4자리" inputmode="numeric" maxlength="4" placeholder="숫자 4자리" autocomplete="off" /><button id="join" disabled>들어가기</button></div>
             </div>
@@ -86,9 +85,9 @@
           </div>
         </div>
         <div class="quick-guide" aria-label="게임 방법 요약">
-          <div><span class="guide-symbol" aria-hidden="true">↕</span><p><b>순서가 힌트예요</b><span>작은 숫자부터 나란히 놓여요.</span></p></div>
-          <div><span class="guide-symbol guide-target" aria-hidden="true"></span><p><b>하나를 골라 맞혀요</b><span>친구의 숨은 타일을 눌러 보세요.</span></p></div>
-          <div><span class="guide-symbol" aria-hidden="true">＋</span><p><b>맞혔다면 한 번 더</b><span>계속 도전할지, 멈출지 골라요.</span></p></div>
+          <div><span class="guide-symbol" aria-hidden="true">↕</span><p><b>작은 수부터 놓여요</b><span>숫자가 같으면 검은 타일이 왼쪽</span></p></div>
+          <div><span class="guide-symbol guide-target" aria-hidden="true"></span><p><b>친구 타일을 골라요</b><span>누르고 숫자를 말해요</span></p></div>
+          <div><span class="guide-symbol" aria-hidden="true">＋</span><p><b>맞히면 한 번 더</b><span>틀리면 내 타일이 하나 공개돼요</span></p></div>
         </div>
         <details class="rules">
           <summary>게임 방법 자세히 보기<span class="details-plus" aria-hidden="true">＋</span></summary>
@@ -104,10 +103,10 @@
         </details>
       </section>
       <section id="lobby" class="screen lobby-screen hidden" aria-label="대기실">
-        <span class="eyebrow">우리끼리 한 판</span><h1>친구를 기다리는 중</h1>
-        <p class="sub">아래 방 번호를 친구들에게 알려 주세요.</p>
+        <h1>친구를 기다리는 중</h1>
+        <p class="sub">친구들에게 방 번호를 알려 주세요</p>
         <div class="rack code-rack"><div class="room-code hand" id="lobby-code" role="img"></div></div>
-        <div class="lobby-paper"><div class="lobby-list-heading"><h2>함께할 친구들</h2><span>최대 4명</span></div><ul id="lobby-players" class="player-list"></ul><p id="lobby-hint" class="hint" role="status"></p><div class="row"><button id="start" class="primary hidden">게임 시작</button><button id="leave" class="quiet">나가기</button></div></div>
+        <div class="lobby-paper"><div class="lobby-list-heading"><h2>참가자</h2><span>최대 4명</span></div><ul id="lobby-players" class="player-list"></ul><p id="lobby-hint" class="hint" role="status"></p><div class="row"><button id="start" class="primary hidden">게임 시작</button><button id="leave" class="quiet">나가기</button></div></div>
       </section>
       <section id="game" class="screen game-screen hidden" aria-label="게임판">
         <div class="game-topline"><div id="banner" class="banner" role="status"></div></div>
@@ -115,7 +114,7 @@
         <div class="turn-area"><div class="middle"><div class="board"><div class="tray" id="tray" aria-hidden="true"></div><div class="pile-text"><span class="pile-label">남은 타일</span><span id="pile-count" class="pile-count"></span></div></div><div id="drawn-box" class="drawn-box"></div></div><div id="panel" class="panel"></div></div>
         <div class="me"><h2 id="my-title" class="seat-head"></h2><div class="rack"><div id="my-hand" class="hand"></div></div></div>
       </section>
-      <footer class="site-footer"><span>천천히 보고, 대담하게 맞혀요.</span></footer>
+      
       <p id="toast" class="toast hidden" role="status"></p>
     </main>
     <script>
