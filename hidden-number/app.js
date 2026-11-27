@@ -1,8 +1,11 @@
 // 숨은 숫자 — 화면과 버튼을 연결하는 코드
 import * as G from "./game.js";
 import { connect } from "./net.js";
+import { createMotionController } from "./motion.js";
 
 const $ = (id) => document.getElementById(id);
+const motion = createMotionController();
+let motionSnapshot = null;
 
 // 탭마다 고유한 '나' (새로고침해도 유지)
 function storageGet(key) {
@@ -39,8 +42,15 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.add("hidden"), 2600);
 }
 
+let activeScreen = null;
 function show(screenId) {
   for (const id of ["home", "lobby", "game"]) $(id).classList.toggle("hidden", id !== screenId);
+  if (activeScreen !== screenId) {
+    motion.cancel();
+    if (screenId !== "game") motionSnapshot = null;
+    activeScreen = screenId;
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
 }
 
 function el(tag, className, text) {
@@ -94,23 +104,38 @@ function leaveRoom() {
 
 async function createRoom() {
   const name = myName();
-  if (!name) return toast("이름을 먼저 써 주세요.");
-  storageSet("hn-name", name);
-  for (let tries = 0; tries < 8; tries++) {
-    const code = String(1000 + Math.floor(Math.random() * 9000));
-    let made = false;
-    try {
-      made = await net.update(code, (s) => (s ? undefined : G.createRoom(myId, name)));
-    } catch (e) {
-      return toast("방을 만들지 못했어요. 인터넷 연결을 확인해 주세요.");
-    }
-    if (made) {
-      storageSet("hn-room", code);
-      await watch(code);
-      return;
-    }
+  if (!name) {
+    $("name").focus();
+    return toast("이름을 먼저 써 주세요.");
   }
-  toast("방을 만들지 못했어요. 다시 눌러 주세요.");
+  const button = $("create");
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = "방 만드는 중…";
+  try {
+    storageSet("hn-name", name);
+    for (let tries = 0; tries < 8; tries++) {
+      const code = String(1000 + Math.floor(Math.random() * 9000));
+      let made = false;
+      try {
+        made = await net.update(code, (s) => (s ? undefined : G.createRoom(myId, name)));
+      } catch (e) {
+        console.error("방 만들기 실패", e);
+        return toast(net.mode === "local"
+          ? "브라우저 저장소에 방을 만들지 못했어요. 일반 브라우저 창에서 다시 열어 주세요."
+          : "방을 만들지 못했어요. 인터넷 연결과 Firebase 데이터베이스 권한을 확인해 주세요.");
+      }
+      if (made) {
+        storageSet("hn-room", code);
+        await watch(code);
+        return;
+      }
+    }
+    toast("방을 만들지 못했어요. 다시 눌러 주세요.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "새 방 만들기";
+  }
 }
 
 async function joinRoom(code, { silent = false } = {}) {
@@ -160,13 +185,19 @@ function render() {
 
 function renderLobby() {
   show("lobby");
-  $("lobby-code").textContent = roomCode;
+  const codeBox = $("lobby-code");
+  codeBox.replaceChildren(
+    ...[...roomCode].map((d, i) => tileNode({ n: Number(d), c: i % 2 ? "dark" : "light" }, { showNumber: true })),
+  );
+  codeBox.setAttribute("aria-label", `방 번호 ${roomCode}`);
   const list = $("lobby-players");
   list.replaceChildren(
     ...state.players.map((p) => {
-      const crown = p.id === state.hostId ? "👑 " : "🙂 ";
+      const li = el("li");
+      const crown = p.id === state.hostId ? " · 방장" : "";
       const you = p.id === myId ? " (나)" : "";
-      return el("li", "", crown + p.name + you);
+      li.append(avatarNode(p), el("span", "", p.name + you + crown));
+      return li;
     }),
   );
   const isHost = state.hostId === myId;
@@ -182,18 +213,41 @@ function renderLobby() {
 
 function tileNode(tile, { showNumber, asButton }) {
   const node = el(asButton ? "button" : "div", `tile ${tile.c}`);
-  if (showNumber) node.textContent = tile.n;
-  else {
-    node.textContent = "?";
-    node.classList.add("hidden-tile");
+  if (showNumber) {
+    // 6과 9는 뒤집어 봐도 헷갈리지 않게 밑줄
+    node.append(el("span", tile.n === 6 || tile.n === 9 ? "u" : "", String(tile.n)));
+  } else {
+    node.classList.add("back");
   }
-  const colorName = tile.c === "dark" ? "밤색" : "낮색";
-  node.setAttribute("aria-label", showNumber ? `${colorName} ${tile.n}` : `${colorName} 숨은 타일`);
+  const colorName = tile.c === "dark" ? "검은" : "흰";
+  node.setAttribute("aria-label", showNumber ? `${colorName} 타일 ${tile.n}` : `${colorName} 숨은 타일`);
   return node;
+}
+
+// 자리마다 받침대 색깔: 파랑, 노랑, 빨강, 초록
+const SEAT_COLORS = ["#587f91", "#a18446", "#ae6b54", "#728759"];
+
+function seatColor(player) {
+  const index = state.players.findIndex((p) => p.id === player.id);
+  return SEAT_COLORS[index % SEAT_COLORS.length];
+}
+
+function avatarNode(player) {
+  const node = el("span", "avatar", [...player.name][0] || "?");
+  node.style.background = seatColor(player);
+  return node;
+}
+
+function rackNode(hand) {
+  const rack = el("div", "rack");
+  rack.append(hand);
+  return rack;
 }
 
 function renderGame(me) {
   show("game");
+  const previousDrawRect = motion.rect($("drawn-box").lastElementChild);
+  const playerTileNodes = new Map();
   const turnPlayer = G.currentPlayer(state);
   const myTurn = state.phase !== "over" && turnPlayer.id === myId;
   const canPick = myTurn && state.phase === "guess";
@@ -214,12 +268,12 @@ function renderGame(me) {
   banner.className = "banner";
   if (state.phase === "over") {
     const winner = state.players.find((p) => p.id === state.winnerId);
-    banner.textContent = winner ? (winner.id === myId ? "🏆 내가 이겼어요!" : `🏆 ${winner.name} 승리!`) : "게임 끝";
+    banner.textContent = winner ? (winner.id === myId ? "내가 이겼어요!" : `${winner.name} 승리!`) : "게임 끝";
     banner.classList.add("over");
   } else if (G.isOut(me)) {
-    banner.textContent = `탈락했어요. 구경 중 👀 (${turnPlayer.name}의 차례)`;
+    banner.textContent = `관전 중 · ${turnPlayer.name}의 차례`;
   } else if (myTurn) {
-    banner.textContent = "🎯 내 차례!";
+    banner.textContent = "내 차례예요";
     banner.classList.add("my-turn");
   } else {
     banner.textContent = `${turnPlayer.name}의 차례`;
@@ -233,19 +287,31 @@ function renderGame(me) {
   $("opponents").replaceChildren(
     ...others.map((p) => {
       const box = el("div", "opponent");
+      box.style.setProperty("--seat", seatColor(p));
       if (p.id === turnPlayer.id && state.phase !== "over") box.classList.add("active");
       const out = G.isOut(p);
       if (out) box.classList.add("out");
-      box.append(el("div", "opponent-name", `${p.name}${out ? " 💥 탈락" : ""}${p.id === turnPlayer.id && state.phase !== "over" ? " ⏳" : ""}`));
+      const head = el("div", "seat-head");
+      const hiddenCount = p.hand.filter((t) => !t.open).length;
+      const nameBox = el("div");
+      const thinking = p.id === turnPlayer.id && state.phase !== "over" ? " · 생각 중" : "";
+      nameBox.append(
+        el("div", "seat-name", p.name + thinking),
+        el("div", "seat-info", out ? "모두 공개 · 탈락" : `숨은 타일 ${hiddenCount}개`),
+      );
+      head.append(avatarNode(p), nameBox);
+      box.append(head);
       const hand = el("div", "hand");
       p.hand.forEach((tile, index) => {
         const pickable = canPick && !tile.open && !out;
         const node = tileNode(tile, { showNumber: tile.open || state.phase === "over", asButton: pickable });
+        if (tile.open) node.classList.add("revealed");
         if (pickable) {
           node.classList.add("pickable");
           node.addEventListener("click", () => {
             selected = { targetId: p.id, index };
             renderGame(me);
+            motion.point(document.querySelector("#opponents .tile.selected"));
           });
         }
         if (selected && selected.targetId === p.id && selected.index === index) node.classList.add("selected");
@@ -254,32 +320,46 @@ function renderGame(me) {
         }
         hand.append(node);
       });
-      box.append(hand);
+      box.append(rackNode(hand));
+      playerTileNodes.set(p.id, [...hand.children]);
       return box;
     }),
   );
 
   // 더미와 뽑은 타일
   $("pile-count").textContent = state.deck.length;
+  // 가운데 판: 엎어 둔 타일들이 흩어져 있는 모습
+  $("tray").replaceChildren(
+    ...state.deck.map((t, i) => {
+      const node = tileNode(t, { showNumber: false });
+      node.style.setProperty("--tilt", `${((i * 37) % 23) - 11}deg`);
+      return node;
+    }),
+  );
   const drawnBox = $("drawn-box");
-  drawnBox.replaceChildren();
-  if (state.drawn && state.phase !== "over") {
-    const mine = turnPlayer.id === myId;
-    drawnBox.append(el("span", "", mine ? "내가 뽑은 타일" : `${turnPlayer.name}가 뽑은 타일`));
-    drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
-  } else if (state.phase !== "over" && state.deck.length === 0) {
-    drawnBox.append(el("span", "", "더미가 비었어요! 틀리면 내 타일 하나가 공개돼요."));
+  const drawnKey = state.drawn ? `${state.turn}-${state.drawn.n}-${state.drawn.c}-${state.phase === "over"}` : "";
+  if (drawnBox.dataset.key !== drawnKey || !drawnKey) {
+    drawnBox.dataset.key = drawnKey;
+    drawnBox.replaceChildren();
+    if (state.drawn && state.phase !== "over") {
+      const mine = turnPlayer.id === myId;
+      drawnBox.append(el("span", "drawn-label", mine ? "이번에 뽑은 타일" : `${turnPlayer.name} · 뽑은 타일`));
+      drawnBox.append(tileNode(state.drawn, { showNumber: mine, asButton: false }));
+    } else if (state.phase !== "over" && state.deck.length === 0) {
+      drawnBox.append(el("span", "drawn-label", "더미가 비었어요! 틀리면 내 타일 하나가 공개돼요."));
+    }
   }
 
   renderPanel(me, myTurn);
 
   // 내 타일
-  $("my-title").textContent = `내 타일 (${me.name})`;
+  $("my-title").replaceChildren(avatarNode(me), el("span", "", `내 타일 (${me.name})`));
+  document.querySelector("#game .me").style.setProperty("--seat", seatColor(me));
   const myHand = $("my-hand");
   myHand.replaceChildren(
     ...me.hand.map((tile, index) => {
       const node = tileNode(tile, { showNumber: true, asButton: false });
-      const mark = el("span", "mark", tile.open ? "👁" : "🔒");
+      const mark = el("span", "mark", tile.open ? "공개" : "나만");
       mark.title = tile.open ? "친구들도 볼 수 있어요" : "나만 볼 수 있어요";
       node.append(mark);
       if (tile.open) node.classList.add("open-mine");
@@ -289,9 +369,29 @@ function renderGame(me) {
       return node;
     }),
   );
+  playerTileNodes.set(myId, [...myHand.children]);
 
   // 기록
   $("log").replaceChildren(...state.log.slice().reverse().map((line) => el("li", "", line)));
+
+  // 뽑은 패를 제자리에 내려놓은 다음, 다음 사람의 뽑기를 연출합니다.
+  const drawKey = state.drawn && state.phase !== "over"
+    ? `${roomCode}-${turnPlayer.id}-${state.drawn.n}-${state.drawn.c}` : "";
+  const old = motionSnapshot;
+  const steps = [];
+  if (old && old.room === roomCode && old.key !== drawKey && old.drawn) {
+    const owner = state.players.find(p => p.id === old.playerId);
+    const index = owner?.hand.findIndex(t => t.n === old.drawn.n && t.c === old.drawn.c) ?? -1;
+    const destination = playerTileNodes.get(old.playerId)?.[index];
+    if (destination && previousDrawRect) {
+      steps.push({ kind: "carry", from: previousDrawRect, to: destination, mine: old.playerId === myId });
+    }
+  }
+  if (drawKey && old?.key !== drawKey) {
+    steps.push({ kind: "carry", from: $("tray"), to: $("drawn-box").lastElementChild, mine: myTurn });
+  }
+  motionSnapshot = { room: roomCode, key: drawKey, playerId: turnPlayer.id, drawn: state.drawn ? { ...state.drawn } : null };
+  if (steps.length) motion.play(steps);
 }
 
 function renderPanel(me, myTurn) {
@@ -317,7 +417,7 @@ function renderPanel(me, myTurn) {
   if (!myTurn) return;
 
   if (state.phase === "continue") {
-    panel.append(el("p", "", "⭕ 정답! 한 번 더 맞혀 볼까요?"));
+    panel.append(el("p", "", "맞혔어요! 한 번 더 도전할까요?"));
     const row = el("div", "row");
     const more = el("button", "primary", "한 번 더 맞히기");
     more.addEventListener("click", () => act((s) => G.keepGoing(s, myId)));
@@ -329,15 +429,16 @@ function renderPanel(me, myTurn) {
   }
 
   if (!selected) {
-    panel.append(el("p", "", "👆 친구의 ? 타일을 하나 눌러 주세요"));
+    panel.append(el("p", "", "친구의 숨은 타일을 하나 골라 주세요."));
     return;
   }
 
   const target = state.players.find((p) => p.id === selected.targetId);
+  const color = target.hand[selected.index].c;
   panel.append(el("p", "", `${target.name}의 ${selected.index + 1}번째 타일은 몇일까요?`));
   const pad = el("div", "numpad");
   for (let n = 0; n <= G.MAX_NUMBER; n++) {
-    const b = el("button", "", String(n));
+    const b = tileNode({ n, c: color }, { showNumber: true, asButton: true });
     b.addEventListener("click", () => {
       const pick = selected;
       selected = null;
@@ -357,15 +458,19 @@ function renderPanel(me, myTurn) {
 
 // ---------- 시작 ----------
 async function main() {
+  motion.bind($("motion-toggle"), $("demo-hand"));
+  $("demo-hand").addEventListener("click", () => motion.demo(document.querySelector(".hero-mystery")));
   $("name").value = storageGet("hn-name") || "";
   net = await connect();
 
   const badge = $("mode-badge");
   if (net.mode === "online") {
-    badge.textContent = "🌐 온라인 모드: 다른 크롬북에서도 같이 할 수 있어요";
+    badge.textContent = "온라인 · 다른 기기에서도 함께할 수 있어요.";
     badge.classList.add("online");
   } else {
-    badge.textContent = "🧪 연습 모드: 이 컴퓨터의 다른 탭끼리만 같이 할 수 있어요";
+    badge.textContent = location.protocol === "file:"
+      ? "파일 미리보기 · 이 컴퓨터에서 연습할 수 있어요."
+      : "연습 모드 · 이 컴퓨터에서 탭을 하나 더 열어 함께해요.";
     badge.classList.add("local");
   }
 
@@ -379,6 +484,8 @@ async function main() {
     if (roomCode) await act((s) => G.removePlayer(s, myId));
     leaveRoom();
   });
+  $("create").disabled = false;
+  $("join").disabled = false;
 
   // 새로고침했을 때 하던 방으로 돌아가기
   const savedRoom = storageGet("hn-room");
@@ -386,4 +493,9 @@ async function main() {
   else show("home");
 }
 
-main();
+main().catch((error) => {
+  console.error("게임 시작 실패", error);
+  const message = "게임을 시작하지 못했어요. 페이지를 새로고침하고, 모든 게임 파일이 같은 폴더에 있는지 확인해 주세요.";
+  $("mode-badge").textContent = message;
+  toast(message);
+});
