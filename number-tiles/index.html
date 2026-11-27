@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1d2531" />
+    <meta name="app-version" content="20261127-0440" />
+    <title>줄줄이 숫자</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&family=Sunflower:wght@700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css?v=20261127-0440" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="logo" aria-label="줄줄이 숫자"><span class="logo-tiles" aria-hidden="true"><i class="r">1</i><i class="b">2</i><i class="y">3</i></span><b>줄줄이 숫자</b></div>
+        <div id="opponents" class="opponents" aria-label="친구들"></div>
+        <div class="tools">
+          <button id="home-btn" class="chip hidden">← 처음으로</button>
+          <button id="sound-toggle" class="chip" aria-pressed="true">소리 켜짐</button>
+          <button id="chat-toggle" class="chip hidden" aria-expanded="false">채팅<span id="chat-unread" class="chat-unread hidden"></span></button>
+        </div>
+      </header>
+
+      <!-- 첫 화면 -->
+      <section id="home" class="screen home" aria-label="게임 시작">
+        <div class="home-art" aria-hidden="true">
+          <div class="felt-card">
+            <div class="art-row"><i class="t r">4</i><i class="t r">5</i><i class="t r">6</i><i class="t r">7</i></div>
+            <div class="art-row"><i class="t b">9</i><i class="t y">9</i><i class="t k">9</i><i class="t star"></i></div>
+            <div class="art-row"><i class="t k">11</i><i class="t k">12</i><i class="t k">13</i></div>
+          </div>
+        </div>
+        <div class="entry">
+          <label class="field" for="name">내 이름<input id="name" maxlength="8" placeholder="이름이나 별명" autocomplete="off" /></label>
+          <button id="create" class="btn primary big" disabled>새 방 만들기</button>
+          <div class="divider"><span>열려 있는 방</span></div>
+          <ul id="room-list" class="room-list" aria-live="polite"><li class="room-empty">방 목록을 불러오는 중…</li></ul>
+          <div class="small-links">
+            <details id="code-join" class="code-join"><summary>방 번호로 들어가기</summary>
+              <div class="join-row"><input id="code" aria-label="방 번호 4자리" inputmode="numeric" maxlength="4" placeholder="숫자 4자리" autocomplete="off" /><button id="join" class="btn small">들어가기</button></div>
+            </details>
+            <button id="practice" class="link-btn">혼자 연습하기</button>
+          </div>
+          <p id="mode-badge" class="badge">준비하고 있어요…</p>
+        </div>
+      </section>
+
+      <!-- 대기실 -->
+      <section id="lobby" class="screen lobby hidden" aria-label="대기실">
+        <div class="lobby-card">
+          <div class="lobby-head">
+            <div><h1 id="lobby-title">친구를 기다리는 중</h1><p id="lobby-sub" class="sub">친구들은 첫 화면의 방 목록에서 이 방을 눌러요</p></div>
+            <div id="lobby-code" class="lobby-code" role="img"></div>
+          </div>
+          <div class="lobby-body">
+            <div class="lobby-col">
+              <h2>참가자 <span class="muted">(2~4명)</span></h2>
+              <ul id="lobby-players" class="player-list"></ul>
+              <div id="bot-row" class="row hidden"><button id="bot-add" class="btn small">로봇 넣기</button><button id="bot-remove" class="btn small">로봇 빼기</button></div>
+            </div>
+            <div class="lobby-col">
+              <h2>규칙 정하기</h2>
+              <div class="setting"><span class="setting-name">처음 낼 때</span><div id="set-meld" class="seg" role="group" aria-label="처음 낼 때"></div></div>
+              <div class="setting"><span class="setting-name">한 차례 시간</span><div id="set-time" class="seg" role="group" aria-label="한 차례 시간"></div></div>
+              <p id="settings-note" class="muted small"></p>
+            </div>
+          </div>
+          <div class="lobby-foot"><p id="lobby-hint" class="hint" role="status"></p><div class="row"><button id="leave" class="btn">나가기</button><button id="start" class="btn primary big hidden">게임 시작</button></div></div>
+        </div>
+      </section>
+
+      <!-- 게임 -->
+      <section id="game" class="screen game hidden" aria-label="게임판">
+        <div id="board-wrap" class="board-wrap">
+          <div id="board" class="board" aria-label="판"></div>
+          <div id="board-note" class="board-note" role="status"></div>
+          <div id="result" class="result hidden" role="dialog" aria-label="결과"></div>
+        </div>
+        <div class="bottom">
+          <div id="rack-wrap" class="rack-wrap"><div id="rack" class="rack" aria-label="내 받침대"></div></div>
+          <div class="actions">
+            <button id="commit" class="btn primary big">다 놓았어요</button>
+            <div class="row"><button id="undo" class="btn small">되돌리기</button><button id="draw" class="btn small">한 장 뽑기</button></div>
+            <div class="row"><button id="sort-num" class="btn small">숫자순</button><button id="sort-color" class="btn small">색깔순</button></div>
+          </div>
+        </div>
+      </section>
+
+      <div id="order" class="order hidden" role="dialog" aria-label="순서"></div>
+      <p id="toast" class="toast hidden" role="status"></p>
+      <section id="chat-panel" class="chat-panel hidden" aria-label="채팅">
+        <div class="chat-head"><b>채팅</b><button id="chat-close" class="chat-close" aria-label="채팅 닫기">×</button></div>
+        <ul id="chat-list" class="chat-list" aria-live="polite"></ul>
+        <form id="chat-form" class="chat-form" autocomplete="off">
+          <input id="chat-input" maxlength="60" placeholder="메시지 쓰기 (60자)" aria-label="채팅 메시지" />
+          <button type="submit" class="btn small">보내기</button>
+        </form>
+      </section>
+      <div id="chat-peek" class="chat-peek hidden" aria-hidden="true"></div>
+    </main>
+    <script src="firebase-config.js?v=20261127-0440"></script>
+    <script src="rules.js?v=20261127-0440"></script>
+    <script src="bot.js?v=20261127-0440"></script>
+    <script src="chat-filter.js?v=20261127-0440"></script>
+    <script src="sound.js?v=20261127-0440"></script>
+    <script src="net.js?v=20261127-0440"></script>
+    <script src="app.js?v=20261127-0440"></script>
+  </body>
+</html>
