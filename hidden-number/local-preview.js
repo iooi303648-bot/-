@@ -1406,13 +1406,21 @@ function renderGame(me) {
       const skip = p.id === turnPlayer.id ? hideIndex : -1;
       const hiddenCount = p.hand.filter((t, i) => !t.open && i !== skip).length;
       const nameBox = el("div");
-      const thinking = p.id === turnPlayer.id && state.phase !== "over" ? " · 생각 중" : "";
+      const thinking = p.id === turnPlayer.id && state.phase !== "over" && state.phase !== "setup" ? " · 생각 중" : "";
       nameBox.append(
         el("div", "seat-name", p.name + thinking),
-        el("div", "seat-info", out ? "모두 공개 · 탈락" : `숨은 타일 ${hiddenCount}개`),
+        el("div", "seat-info", state.phase === "setup" ? "타일 정리 중" : out ? "모두 공개 · 탈락" : `숨은 타일 ${hiddenCount}개`),
       );
       head.append(avatarNode(p), nameBox);
       box.append(head);
+      if (state.phase === "setup") {
+        // 시작 단계: 받침대를 천으로 덮어서 몇 장인지, 조커를 어디 놓는지 안 보이게
+        const cover = el("div", "rack-cover");
+        cover.append(el("span", "", "타일 정리 중…"));
+        box.append(rackNode(cover));
+        playerTileNodes.set(p.id, []);
+        return box;
+      }
       const hand = el("div", "hand");
       const byIndex = [];
       p.hand.forEach((tile, index) => {
