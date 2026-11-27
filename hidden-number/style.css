@@ -1896,3 +1896,40 @@ button.table-demo { border-radius: 999px; }
   .login .intro { padding: 34px 20px 0; }
   .login .entry-card { padding: 16px 24px 28px; }
 }
+
+/* ===== 로그인 카드 크게 ===== */
+.home-screen.login { max-width: 580px; margin-top: 0; }
+.login .intro { padding: 44px 40px 0; }
+.login .tile-scene { max-width: 430px; height: 220px; margin-top: 14px; }
+.login .hero-tiles .tile { --tile-w: 84px; --tile-h: 118px; }
+.login .owl { width: 104px; }
+.login .owl-wrap .scene-note { font-size: 17px; padding: 8px 15px; }
+.login .entry-card { padding: 22px 48px 42px; }
+.login .field { font-size: 17px; gap: 11px; margin-bottom: 22px; }
+.login .entry-card input { min-height: 60px; font-size: 18px; padding-left: 24px; }
+.login button.primary,
+.login .join-row button { min-height: 60px; font-size: 19px; }
+.login .join-row button { padding-left: 28px; padding-right: 28px; }
+.login .divider { font-size: 15px; margin: 26px 0 22px; }
+.login .badge { font-size: 14px; padding: 9px 16px; margin-top: 22px; }
+.app:has(.home-screen.login:not(.hidden)) .site-header { height: 84px; }
+@media (max-width: 720px) {
+  .login .intro { padding: 34px 20px 0; }
+  .login .tile-scene { height: 180px; }
+  .login .hero-tiles .tile { --tile-w: 66px; --tile-h: 94px; }
+  .login .owl { width: 80px; }
+  .login .entry-card { padding: 18px 24px 30px; }
+  .login .entry-card input, .login button.primary, .login .join-row button { min-height: 54px; font-size: 17px; }
+}
+.login .entry-card input::placeholder { font-size: 17px; }
+
+/* 크롬북처럼 가로는 넓고 세로가 낮은 화면: 카드를 가로로 넓게 (왼쪽 그림, 오른쪽 입력) */
+@media (min-width: 900px) and (max-height: 820px) {
+  .app:has(.home-screen.login:not(.hidden)) .site-header { height: 70px; }
+  .home-screen.login { max-width: 980px; }
+  .login .home-layout { grid-template-columns: 1.05fr 1fr; align-items: center; }
+  .login .intro { padding: 30px 10px 30px 44px; }
+  .login .tile-scene { margin: 0 auto; }
+  .login .entry-card { padding: 40px 50px 40px 30px; }
+}
+@media (max-width: 720px) { .login .badge { font-size: 12px; padding: 8px 14px; } }
