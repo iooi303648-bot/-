@@ -44,6 +44,10 @@ ZIP 압축을 **모두 푼 뒤** `index.html`을 더블클릭하면 파일 미�
      "rules": {
        "rooms": {
          "$code": { ".read": true, ".write": true }
+       },
+       "lobby": {
+         ".read": true,
+         "$code": { ".write": true }
        }
      }
    }
