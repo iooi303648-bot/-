@@ -1,8 +1,8 @@
 // 숨은 숫자 — 화면과 버튼을 연결하는 코드
-import * as G from "./game.js";
-import { connect } from "./net.js";
-import { createMotionController } from "./motion.js";
-import { createSound } from "./sound.js";
+import * as G from "./game.js?v=20261127-0258";
+import { connect } from "./net.js?v=20261127-0258";
+import { createMotionController } from "./motion.js?v=20261127-0258";
+import { createSound } from "./sound.js?v=20261127-0258";
 
 const $ = (id) => document.getElementById(id);
 const motion = createMotionController();
